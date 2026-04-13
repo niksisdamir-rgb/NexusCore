@@ -20,6 +20,7 @@ const navItems = [
   { name: "Plan Proizvodnje", href: "/proizvodnja", icon: Factory },
   { name: "Zalihe", href: "/zalihe", icon: Database },
   { name: "Otpremnice", href: "/otpremnice", icon: FileText },
+  { name: "Izvještaji", href: "/izvjestaji", icon: TrendingUp },
   { name: "AI Asistent", href: "/ai-asistent", icon: Bot, color: "text-blue-500" },
 ];
 
