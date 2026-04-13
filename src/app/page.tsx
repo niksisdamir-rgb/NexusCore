@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useSensorStream } from "@/hooks/useSensorStream";
 import { useMaintenance } from "@/hooks/useMaintenance";
+import { useLogistics } from "@/hooks/useLogistics";
 
 const PlantScene = dynamic(() => import("@/components/elkonmix/PlantScene"), { ssr: false });
 const VoiceAssistant = dynamic(() => import("@/components/elkonmix/VoiceAssistant"), { ssr: false });
@@ -28,6 +29,7 @@ const VoiceAssistant = dynamic(() => import("@/components/elkonmix/VoiceAssistan
 export default function DashboardPage() {
   const { data: streamData, status: streamStatus } = useSensorStream();
   const { report: maintenanceReport } = useMaintenance();
+  const { trucks } = useLogistics();
   const [data, setData] = useState<{
     recipes: any[];
     orders: any[];
@@ -180,9 +182,45 @@ export default function DashboardPage() {
         </Card>
 
         {/* Side Info / Logs */}
-        <div className="space-y-6 lg:col-span-1">
-          <Card className="h-full border-primary/10 shadow-sm flex flex-col">
-            <CardHeader className="pb-3 border-b border-border/50">
+        <div className="space-y-6 lg:col-span-1 flex flex-col">
+          {/* Logistics Mini Widget */}
+          <Card className="border-blue-500/20 bg-blue-500/5 shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 border-b border-blue-500/10 py-3">
+              <CardTitle className="text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-blue-500" /> 
+                  <span>AKTIVNA FLOTA</span>
+                </div>
+                <Badge variant="outline" className="text-[9px] px-1.5 font-bold border-blue-500/30 text-blue-500">
+                  {trucks.filter(t => t.status !== "IDLE").length} AKTIVNO
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 space-y-2">
+              {trucks.filter(t => t.status !== "IDLE").slice(0, 3).map(truck => (
+                <div key={truck.id} className="bg-background/40 p-2 rounded border border-border/50 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                     <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                     <span className="text-[11px] font-bold">{truck.plate}</span>
+                   </div>
+                   <div className="text-[9px] font-medium text-muted-foreground uppercase opacity-70">
+                      {truck.status === "TRANSIT" ? "U tranzitu" : truck.status === "LOADING" ? "Utovar" : "Na istovaru"}
+                   </div>
+                </div>
+              ))}
+              <div className="pt-1">
+                <button 
+                  onClick={() => window.location.href = "/logistika"}
+                  className="w-full py-1 text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase tracking-widest text-center"
+                >
+                  Otvori radar flote →
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="flex-1 border-primary/10 shadow-sm flex flex-col min-h-0">
+            <CardHeader className="pb-3 border-b border-border/50 py-3">
               <CardTitle className="text-sm flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <History className="h-4 w-4 text-muted-foreground" /> 
@@ -191,7 +229,7 @@ export default function DashboardPage() {
                 <Badge variant="secondary" className="text-[9px] px-1.5 font-bold">{data.orders.length}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto pt-4 space-y-4 px-4">
+            <CardContent className="flex-1 overflow-y-auto pt-4 space-y-4 px-4 scrollbar-hide">
                {data.orders.slice(0, 8).map((order: any) => (
                  <div key={order.id} className="flex flex-col border-l-2 border-primary/30 pl-4 py-1.5 hover:bg-muted/30 transition-colors rounded-r-md cursor-default">
                     <div className="flex justify-between items-start">

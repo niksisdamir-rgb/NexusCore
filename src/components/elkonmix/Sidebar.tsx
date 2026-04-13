@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Stethoscope,
   Users,
-  Settings
+  Settings,
+  Truck
 } from "lucide-react";
 
 const navItems = [
@@ -23,6 +24,7 @@ const navItems = [
   { name: "Plan Proizvodnje", href: "/proizvodnja", icon: Factory },
   { name: "Zalihe", href: "/zalihe", icon: Database },
   { name: "Otpremnice", href: "/otpremnice", icon: FileText },
+  { name: "Logistika", href: "/logistika", icon: Truck },
   { name: "Izvještaji", href: "/izvjestaji", icon: TrendingUp },
   { name: "Održavanje", href: "/odrzavanje", icon: Stethoscope },
   { name: "Tim & Smene", href: "/tim", icon: Users },

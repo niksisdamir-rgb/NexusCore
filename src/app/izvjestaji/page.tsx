@@ -33,7 +33,7 @@ import {
   Bar,
   Cell
 } from "recharts";
-import { exportToExcel, generateProductionPDF } from "@/lib/exportUtils";
+import { exportToExcel, generateProductionPDF, generateShiftSummaryPDF } from "@/lib/exportUtils";
 import { Badge } from "@/components/ui/badge";
 import BatchDetailsModal from "@/components/BatchDetailsModal";
 
@@ -154,6 +154,15 @@ export default function IzvjestajiPage() {
           >
             <FileSpreadsheet className="h-4 w-4" />
             Excel / CSV
+          </button>
+
+          <button 
+            onClick={() => reportData && generateShiftSummaryPDF(reportData)}
+            disabled={!reportData}
+            className="flex items-center gap-2 bg-slate-800 text-white hover:bg-slate-700 px-4 py-2 rounded-lg font-medium transition-all"
+          >
+            <Activity className="h-4 w-4" />
+            Izveštaj Smene
           </button>
         </div>
       </div>
