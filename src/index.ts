@@ -1,4 +1,5 @@
-// Core Framework Exports
+// Core
+export * from './ai/core/NexusApp';
 
 // LLM
 export * from './ai/llm/BaseModel';
@@ -16,6 +17,9 @@ export * from './ai/data/transformers/TextSplitter';
 // Vector Stores
 export * from './ai/data/vectorstores/BaseVectorStore';
 export * from './ai/data/vectorstores/MemoryVectorStore';
+
+// Workflows
+export * from './ai/workflows/StateGraph';
 
 // Agents
 export * from './ai/agents/Agent';

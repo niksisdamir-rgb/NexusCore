@@ -16,13 +16,13 @@ async function main() {
   const graph = new StateGraph<ReviewState>();
 
   // 3. Define Nodes
-  graph.addNode('Researcher', async (state) => {
+  graph.addNode('Researcher', async (state: ReviewState) => {
     console.log(`[Worker: Researcher] Initiating research on: ${state.topic}`);
     // In reality, this would be an Agent calling tools. We simulate it here.
     return { draft: `This is the initial draft regarding ${state.topic}.` };
   });
 
-  graph.addNode('Editor', async (state) => {
+  graph.addNode('Editor', async (state: ReviewState) => {
     console.log(`[Worker: Editor] Reviewing draft (Revision #${state.revisionCount})...`);
     
     if (state.revisionCount >= 2) {
@@ -38,7 +38,7 @@ async function main() {
     }
   });
 
-  graph.addNode('Writer', async (state) => {
+  graph.addNode('Writer', async (state: ReviewState) => {
      console.log(`[Worker: Writer] Applying feedback: "${state.feedback}"`);
      return { draft: state.draft + ' Adding technical specifics...' };
   });
@@ -50,7 +50,7 @@ async function main() {
   graph.addEdge('Researcher', 'Editor');
 
   // Conditional Branching (A cyclical loop!)
-  graph.addConditionalEdge('Editor', (state) => {
+  graph.addConditionalEdge('Editor', (state: ReviewState) => {
     if (state.isValid) {
       return StateGraph.END; // Route to conclusion
     } else {
