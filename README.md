@@ -1,57 +1,140 @@
-# NexusCore
+# Betonska Baza Hodovo — AzVirt
 
-[![CI/CD](https://github.com/NexusCore/NexusCore/actions/workflows/ci.yml/badge.svg)](https://github.com/NexusCore/NexusCore/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%230074c1.svg)](http://www.typescriptlang.org/)
+**Interactive 3D Visualization & SCADA System** for the Elkonmix-90 concrete mixing plant at Betonska Baza Hodovo, AzVirt d.o.o.
 
-**NexusCore** is an enterprise-grade TypeScript backend framework designed to provide robust microservices and modular monolith capabilities out of the box.
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![Three.js](https://img.shields.io/badge/Three.js-R3F-orange)](https://threejs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8)](https://tailwindcss.com/)
 
-## Philosophy
+## Overview
 
-NexusCore believes that a professional framework should enable high velocity while maintaining strict guarantees on scalability, security, and developer experience. We bring together industry-standard tools and architectural patterns to create a solid foundation for any production-ready application.
+A comprehensive web application featuring:
+- **3D Interactive Plant Model** — Fully procedural Three.js visualization of the Elkonmix-90 concrete plant with real proportions and technical drawing aesthetics
+- **SCADA Monitoring System** — Real-time plant simulation with 11 functional tabs including production management, delivery notes, recipes, inventory, and operator management
+- **Dashboard** — Key performance indicators, production statistics, and system monitoring
+- **Dual 3D Viewer** — Both dynamic (animated) and static (component-by-component) 3D inspection modes
 
-## Key Features
+## Tech Stack
 
-- **End-to-End Type Safety**: Built from the ground up with strict TypeScript configurations.
-- **Modular Architecture**: Easy isolation of domains and contexts.
-- **Plug-and-Play Infrastructure**: Ready-to-go integrations for Redis, PostgreSQL, and Message Brokers.
-- **Observability Built-In**: OpenTelemetry configuration configured by default.
-- **Enterprise Security**: Secure by default configuration, rate limiting, and comprehensive security middleware.
+| Category | Technology |
+|----------|-----------|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript 5 |
+| 3D Engine | Three.js + React Three Fiber + Drei |
+| Styling | Tailwind CSS 3 + shadcn/ui |
+| State | Zustand + TanStack Query |
+| Database | SQLite via Prisma ORM |
+| Icons | Lucide React |
+| Animation | Framer Motion |
 
-## Quick Start
+## Features
+
+### 3D Visualization
+- Fully procedural 3D model (no external GLTF files)
+- 12+ plant components with technical edge rendering
+- Animated conveyor belts, dust particles, rotating mixer
+- Quality-based rendering (Low/Medium/High)
+- FPS monitoring and adaptive performance
+- Rain/weather effects
+- Day/night cycle
+- Exploded view mode
+- Component-by-component static viewer with dimension labels
+
+### SCADA System (11 Tabs)
+| Tab | Feature |
+|-----|---------|
+| Početna | Process flow SVG, equipment monitoring, batch controls |
+| Stranice | Daily reports with print support |
+| Recepti | Recipe management with xlsx import |
+| Plan proizvodnje | Production planning |
+| Proizvodnje | Production order CRUD |
+| Otpremnice | Delivery note management with printing |
+| Zalihe | Inventory management with low-stock alerts |
+| Korisnici | Operator management (roles, shifts) |
+| Postavke | System settings, calibration, alarm config |
+| Pomoć | Help, keyboard shortcuts, system info |
+| Odjava | Logout |
+
+### Dashboard
+- Production KPIs and statistics
+- Equipment status overview
+- Recent activity feed
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── scada/route.ts          # SCADA simulation + recipe CRUD
+│   │   ├── scada/import/route.ts   # xlsx recipe import
+│   │   ├── scada/seed/route.ts     # Database seeding
+│   │   ├── productions/route.ts    # Production orders CRUD
+│   │   ├── otpremmnice/route.ts    # Delivery notes CRUD
+│   │   ├── inventory/route.ts      # Inventory CRUD
+│   │   ├── operators/route.ts      # Operators CRUD
+│   │   └── reports/route.ts        # Daily reports CRUD
+│   ├── page.tsx                    # Main page (routing)
+│   ├── layout.tsx                  # Root layout
+│   └── globals.css                 # Global styles
+├── components/
+│   ├── Elkonmix/
+│   │   ├── PlantScene.tsx          # 3D scene (~8200 lines)
+│   │   ├── PlantUI.tsx             # 3D viewer UI (~4900 lines)
+│   │   ├── LandingPage.tsx         # Landing page (~1000 lines)
+│   │   ├── Dashboard.tsx           # Dashboard (~2000 lines)
+│   │   ├── ScadaSystem.tsx         # SCADA system (~4300 lines)
+│   │   ├── StaticViewer.tsx        # Static 3D viewer (~1600 lines)
+│   │   └── specs.ts                # Equipment specifications
+│   └── ui/                         # shadcn/ui components
+├── hooks/                          # Custom React hooks
+└── lib/
+    ├── db.ts                       # Prisma database client
+    └── utils.ts                    # Utility functions
+prisma/
+└── schema.prisma                   # Database schema
+```
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+ or Bun
+- SQLite3
+
+### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/YourOrg/NexusCore.git
-
-# Navigate into the project
-cd NexusCore
+git clone https://github.com/YOUR_USERNAME/betonska-baza-hodovo.git
+cd betonska-baza-hodovo
 
 # Install dependencies
-npm install
+bun install
 
-# Start the development server
-npm run dev
+# Set up database
+bun run db:push
+
+# Start development server
+bun run dev
 ```
 
-## Documentation
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Comprehensive documentation can be found in the `/docs` directory.
+### Database Seeding
 
-- [Architecture Decisions](./docs/architecture/decisions)
-- [API Reference](./docs/api.md)
-- [Deployment Guide](./docs/deployment.md)
+```bash
+curl -X POST http://localhost:3000/api/scada/seed
+```
 
-## Contributing
+## Language
 
-We welcome contributions! Please see our [CONTRIBUTING.md](./CONTRIBUTING.md) for details on how to get started, our Pull Request process, and the development environment setup.
-
-Please also read our [Code of Conduct](./CODE_OF_CONDUCT.md).
-
-## Security
-
-If you discover a security vulnerability within this project, please review our [Security Policy](./SECURITY.md) for reporting guidelines.
+All UI text is in **Bosnian** (Bosanski jezik) as the plant is located in Hodovo, Bosnia and Herzegovina.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+Proprietary — AzVirt d.o.o.
+
+---
+
+Built with Next.js, Three.js, and Tailwind CSS.
