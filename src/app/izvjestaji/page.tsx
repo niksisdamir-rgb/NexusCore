@@ -31,8 +31,16 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Cell
+  Cell,
+  PieChart,
+  Pie
 } from "recharts";
+import { 
+  Truck, 
+  MapPin, 
+  Clock, 
+  CheckCircle2 
+} from "lucide-react";
 import { exportToExcel, generateProductionPDF, generateShiftSummaryPDF } from "@/lib/exportUtils";
 import { Badge } from "@/components/ui/badge";
 import BatchDetailsModal from "@/components/BatchDetailsModal";
@@ -40,6 +48,7 @@ import BatchDetailsModal from "@/components/BatchDetailsModal";
 export default function IzvjestajiPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [reportData, setReportData] = useState<any>(null);
+  const [logisticsData, setLogisticsData] = useState<any>(null);
   const [trendData, setTrendData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -49,13 +58,15 @@ export default function IzvjestajiPage() {
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const [resDaily, resTrends] = await Promise.all([
+      const [resDaily, resTrends, resLogistics] = await Promise.all([
         fetch(`/api/reports/daily?date=${date}`).then(r => r.json()),
-        fetch(`/api/reports/trends?id=mixer_temp&hours=24`).then(r => r.json())
+        fetch(`/api/reports/trends?id=mixer_temp&hours=24`).then(r => r.json()),
+        fetch(`/api/logistics`).then(r => r.json())
       ]);
 
       if (resDaily.success) setReportData(resDaily);
       if (resTrends.success) setTrendData(resTrends.data);
+      if (resLogistics.success) setLogisticsData(resLogistics);
     } catch (error) {
       console.error("Failed to load reports:", error);
     } finally {
@@ -77,6 +88,19 @@ export default function IzvjestajiPage() {
       { name: "Voda", value: c.water, unit: "L", color: "#0ea5e9" },
     ];
   }, [reportData]);
+
+  const fleetStats = useMemo(() => {
+    if (!logisticsData) return [];
+    const statusCounts: Record<string, number> = {};
+    logisticsData.vehicles.forEach((v: any) => {
+      statusCounts[v.status] = (statusCounts[v.status] || 0) + 1;
+    });
+    return Object.entries(statusCounts).map(([name, value]) => ({
+      name,
+      value,
+      color: name === 'IN_TRANSIT' ? '#3b82f6' : name === 'LOADING' ? '#f59e0b' : '#6b7280'
+    }));
+  }, [logisticsData]);
 
   const handlePdfExport = async () => {
     if (!reportData) return;
@@ -189,12 +213,12 @@ export default function IzvjestajiPage() {
           icon={<Layers className="h-5 w-5 text-amber-500" />}
         />
         <KpiCard 
-          title="Efektivnost" 
-          value="94%"
-          description="Odnos planirano vs ostvareno"
-          icon={<TrendingUp className="h-5 w-5 text-primary" />}
-          trend="Optimalno"
-          trendColor="text-green-500"
+          title="Logistika: Aktivni" 
+          value={logisticsData?.vehicles.filter((v:any) => v.status === 'IN_TRANSIT').length || 0}
+          description="Kamiona trenutno na putu"
+          icon={<Truck className="h-5 w-5 text-blue-500" />}
+          trend="Real-time"
+          trendColor="text-blue-500"
         />
       </div>
 
@@ -269,6 +293,72 @@ export default function IzvjestajiPage() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Fleet Distribution */}
+        <Card className="lg:col-span-3 border-primary/10 shadow-md">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Truck className="h-5 w-5 text-blue-500" /> Status Voznog Parka
+              </CardTitle>
+              <CardDescription>Trenutna raspodela mešalica po statusu</CardDescription>
+            </div>
+            <div className="flex gap-4">
+               {fleetStats.map((s:any) => (
+                 <div key={s.name} className="flex items-center gap-1.5 text-xs font-bold">
+                   <div className="h-2 w-2 rounded-full" style={{ background: s.color }} />
+                   <span className="opacity-70">{s.name}: {s.value}</span>
+                 </div>
+               ))}
+            </div>
+          </CardHeader>
+          <CardContent className="h-[250px] flex items-center justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={fleetStats}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  animationDuration={1500}
+                >
+                  {fleetStats.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 flex-1 ml-8">
+               <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Refill Orders</p>
+                  <p className="text-2xl font-bold">{logisticsData?.refillOrders.length || 0}</p>
+               </div>
+               <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Total Vehicles</p>
+                  <p className="text-2xl font-bold">{logisticsData?.vehicles.length || 0}</p>
+               </div>
+               <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">In Transit</p>
+                  <p className="text-2xl font-bold text-blue-500">
+                    {logisticsData?.vehicles.filter((v:any) => v.status === 'IN_TRANSIT').length || 0}
+                  </p>
+               </div>
+               <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Pending Refills</p>
+                  <p className="text-2xl font-bold text-amber-500">
+                    {logisticsData?.refillOrders.filter((o:any) => o.status === 'PENDING').length || 0}
+                  </p>
+               </div>
+            </div>
           </CardContent>
         </Card>
       </div>

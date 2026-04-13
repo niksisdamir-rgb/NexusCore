@@ -15,15 +15,28 @@ interface VerifyPageProps {
 
 export default async function VerifyPage({ searchParams }: VerifyPageProps) {
   const params = await searchParams;
-  const { d: date, v: volume, s: signature, t: type = "daily" } = params;
+  const { 
+    d: date, 
+    v: volume, 
+    s: signature, 
+    t: type = "daily",
+    id,
+    client
+  } = params;
 
   // Basic validation of presence
-  if (!date || !volume || !signature) {
+  if (!signature || !volume) {
     return <ErrorState message="Nedostaju parametri za verifikaciju." />;
   }
 
   // Verification Logic
-  const validationParams = { date, volume, type };
+  let validationParams: Record<string, string | number> = {};
+  if (type === "otpremnica") {
+    validationParams = { id: id || "", volume, client: client || "" };
+  } else {
+    validationParams = { date: date || "", volume, type };
+  }
+  
   const isValid = verifyReport(validationParams, signature);
 
   return (
@@ -47,8 +60,8 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
                   <ShieldCheck className="h-10 w-10 text-emerald-500" />
                 </div>
                 <div className="text-center">
-                  <h2 className="text-2xl font-bold">Izveštaj Verifikovan</h2>
-                  <p className="text-slate-400 text-sm mt-1">Ovaj dokument je originalan i nepromenjen.</p>
+                  <h2 className="text-2xl font-bold font-display">Dokument Verifikovan</h2>
+                  <p className="text-slate-400 text-sm mt-1">Podaci se poklapaju sa originalnim zapisom u bazi.</p>
                 </div>
               </>
             ) : (
@@ -66,31 +79,35 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
 
           {/* Data Snapshot */}
           <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800 space-y-4">
-            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800 pb-2">
-              Službeni Podaci iz Baze
+            <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-slate-800/50 pb-2 flex justify-between">
+              <span>Službeni Podaci</span>
+              <span className="text-blue-500">{type.toUpperCase()}</span>
             </h3>
             
-            <div className="grid grid-cols-2 gap-y-4">
+            <div className="grid grid-cols-2 gap-y-4 text-sm">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 uppercase">Tip Izveštaja</span>
-                <div className="flex items-center gap-2 text-sm font-semibold">
+                <span className="text-[10px] text-slate-500 uppercase">Referenca</span>
+                <div className="flex items-center gap-2 font-semibold">
                   <Box className="h-3.5 w-3.5 text-blue-500" />
-                  {type === 'daily' ? 'Dnevni' : 'Serijski'}
+                  {type === 'otpremnica' ? `OPT-${id}` : 'Dnevni Izvještaj'}
                 </div>
               </div>
               
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-500 uppercase">Datum</span>
-                <div className="flex items-center gap-2 text-sm font-semibold text-right justify-end">
-                  <Calendar className="h-3.5 w-3.5 text-blue-500" />
-                  {date}
+              <div className="space-y-1 text-right">
+                <span className="text-[10px] text-slate-500 uppercase">Datum / Klijent</span>
+                <div className="flex items-center gap-2 font-semibold justify-end">
+                  {type === 'daily' ? (
+                    <><Calendar className="h-3.5 w-3.5 text-blue-500" /> {date}</>
+                  ) : (
+                    <span className="truncate max-w-[120px]">{client}</span>
+                  )}
                 </div>
               </div>
 
               <div className="col-span-2 pt-2 border-t border-slate-800/50">
-                <span className="text-[10px] text-slate-500 uppercase">Ukupna Zapremina</span>
+                <span className="text-[10px] text-slate-500 uppercase">Verifikovana Količina</span>
                 <div className="flex items-end gap-1 mt-1">
-                  <span className="text-3xl font-bold tracking-tighter text-blue-400">{volume}</span>
+                  <span className="text-4xl font-bold tracking-tighter text-blue-400 font-display">{volume}</span>
                   <span className="text-sm font-medium mb-1.5 text-slate-500">m³</span>
                 </div>
               </div>
@@ -98,25 +115,31 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
           </div>
 
           {/* Footer Info */}
-          <div className="text-center space-y-4 pt-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-800/50 rounded-full border border-slate-700">
-               <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-               <span className="text-[9px] font-mono text-slate-400">Verifikovano u realnom vremenu</span>
+          <div className="text-center space-y-6 pt-4">
+            <div className="flex flex-col items-center gap-2">
+               <div className="px-3 py-1 bg-slate-800/50 rounded-full border border-slate-700/50 flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  <span className="text-[9px] font-mono text-slate-400">Autentičnost garantovana HMAC-SHA256</span>
+               </div>
+               <p className="text-[9px] text-slate-600 max-w-[240px]">
+                 Svaka izmena podataka na fizičkom dokumentu poništava ovu digitalnu verifikaciju.
+               </p>
             </div>
             
             <Link 
-              href="/login" 
-              className="group flex items-center justify-center gap-2 text-xs text-slate-500 hover:text-white transition-colors"
+              href="/" 
+              className="group flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 px-4 rounded-xl border border-slate-800 hover:bg-slate-800/50"
             >
-              Prijavi se na SCADA portal <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+              Povratak na Portal <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
         </div>
       </div>
       
       {/* Background Decor */}
-      <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none opacity-20">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[120px] rounded-full" />
+      <div className="fixed top-0 left-0 w-full h-full -z-10 overflow-hidden pointer-events-none">
+         <div className="absolute top-[20%] left-[10%] w-[300px] h-[300px] bg-blue-600/5 blur-[100px] rounded-full" />
+         <div className="absolute bottom-[20%] right-[10%] w-[300px] h-[300px] bg-slate-600/5 blur-[100px] rounded-full" />
       </div>
     </div>
   );
