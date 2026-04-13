@@ -30,12 +30,54 @@ export class MaintenanceAgent {
   private llm = new GeminiProvider();
 
   async runDiagnostics(): Promise<DiagnosticsReport> {
-    // ... (existing code remains for historical analysis)
+    // 1. Fetch all assets to update their lifecycle stats
+    const assets = await prisma.asset.findMany({
+      include: { tickets: { where: { status: "OPEN" } } }
+    });
+
     const recentLogs = await prisma.telemetryLog.findMany({
-      take: 100,
+      take: 200,
       orderBy: { timestamp: "desc" }
     });
-    return this.calculateReport(recentLogs);
+
+    // 2. Refresh Asset Usage & Health in DB
+    // In a real SCADA, we'd sum up m3 from ProductionOrders since last install
+    for (const asset of assets) {
+       let wearFactor = 0;
+       
+       // Impact of vibration on health score
+       const assetLogs = recentLogs.filter(l => l.vibrationLevel > 60);
+       if (assetLogs.length > 10) wearFactor += 5;
+       if (assetLogs.some(l => l.vibrationLevel > 90)) wearFactor += 15;
+
+       // usage vs expected life
+       const usageRatio = asset.currentUsage / asset.expectedLife;
+       const ageImpact = usageRatio * 20; // Max 20% impact from pure age
+
+       const newHealth = Math.max(0, Math.min(100, 100 - ageImpact - wearFactor));
+       
+       await prisma.asset.update({
+         where: { id: asset.id },
+         data: { 
+           healthScore: newHealth,
+           status: newHealth < 20 ? "FAILED" : (newHealth < 50 ? "MAINTENANCE" : "OPERATIONAL")
+         }
+       });
+
+       // Auto-generate ticket if critical and no ticket exists
+       if (newHealth < 30 && asset.tickets.length === 0) {
+         await prisma.maintenanceTicket.create({
+           data: {
+             assetId: asset.id,
+             title: `URGENT: Proactive maintenance for ${asset.name}`,
+             description: `AI Predictor detected critical health score (${newHealth.toFixed(1)}%). Likely due to wear and recent vibration spikes.`,
+             priority: "URGENT"
+           }
+         });
+       }
+    }
+
+    return this.calculateReport(recentLogs, assets);
   }
 
   /**
@@ -84,11 +126,10 @@ export class MaintenanceAgent {
     return { healthScore: Math.max(0, baseScore), alerts };
   }
 
-  private calculateReport(logs: any[]): DiagnosticsReport {
-    // Helper to calculate the full diagnostics report from historical logs
-    // (Logic moved from runDiagnostics for cleaner code)
+  private calculateReport(logs: any[], assets: any[]): DiagnosticsReport {
     const alerts: MaintenanceAlert[] = [];
     const highVibration = logs.filter(l => l.vibrationLevel > 80);
+    
     if (highVibration.length > 5) {
       alerts.push({
         id: `v-${Date.now()}`,
@@ -98,17 +139,31 @@ export class MaintenanceAgent {
         timestamp: new Date().toISOString()
       });
     }
-    
-    const mixerScore = Math.max(0, 100 - (alerts.length * 20));
+
+    // Map DB assets to component health format
+    const mixerAsset = assets.find(a => a.type === "MOTOR" && a.name.includes("Mešalica"));
+    const conveyorAsset = assets.find(a => a.type === "CONVEYOR");
+    const siloAsset = assets.find(a => a.type === "SILO") || { healthScore: 98 };
+
     return {
-      healthScore: Math.round((mixerScore + 95 + 98) / 3),
+      healthScore: Math.round(assets.reduce((acc, a) => acc + a.healthScore, 0) / (assets.length || 1)),
       components: {
-        mixer: { status: mixerScore < 50 ? "CRITICAL" : (mixerScore < 90 ? "WARNING" : "GOOD"), score: mixerScore },
-        conveyor: { status: "GOOD", score: 95 },
-        silo: { status: "GOOD", score: 98 }
+        mixer: { 
+          status: (mixerAsset?.healthScore || 100) < 50 ? "CRITICAL" : ((mixerAsset?.healthScore || 100) < 85 ? "WARNING" : "GOOD"), 
+          score: mixerAsset?.healthScore || 100 
+        },
+        conveyor: { 
+          status: (conveyorAsset?.healthScore || 100) < 50 ? "CRITICAL" : ((conveyorAsset?.healthScore || 100) < 85 ? "WARNING" : "GOOD"), 
+          score: conveyorAsset?.healthScore || 100 
+        },
+        silo: { status: siloAsset.healthScore < 50 ? "CRITICAL" : "GOOD", score: siloAsset.healthScore }
       },
       alerts,
-      recommendations: ["Podmazati ležajeve...", "Očistiti senzore..."]
+      recommendations: [
+        "Planirati servis zamene trake u narednih 15 radnih sati.",
+        "Proveriti pritezne vijke na motoru mešalice zbog vibracija.",
+        "Analizirati kvalitet maziva u silositima (vlažnost)."
+      ]
     };
   }
 }

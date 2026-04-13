@@ -25,16 +25,19 @@ import {
 
 export default function MaintenancePage() {
   const [report, setReport] = useState<any>(null);
+  const [assets, setAssets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDiagnostics = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/ai/diagnostics");
-      const data = await res.json();
-      if (data.success) {
-        setReport(data.report);
-      }
+      const [resDiag, resAssets] = await Promise.all([
+        fetch("/api/ai/diagnostics").then(r => r.json()),
+        fetch("/api/assets").then(r => r.json())
+      ]);
+      
+      if (resDiag.success) setReport(resDiag.report);
+      if (resAssets.success) setAssets(resAssets.assets);
     } catch (e) {
       console.error(e);
     } finally {
@@ -42,8 +45,24 @@ export default function MaintenancePage() {
     }
   };
 
+  const handleResolveTicket = async (assetId: number, ticketId: number) => {
+    try {
+       const res = await fetch("/api/assets", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ action: "RESOLVE_TICKET", assetId, ticketId, data: { technician: "Amir Admin" } })
+       });
+       if (res.ok) {
+         fetchData();
+         alert("Ticket uspešno zatvoren. Servis logovan.");
+       }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   useEffect(() => {
-    fetchDiagnostics();
+    fetchData();
   }, []);
 
   if (loading && !report) {
@@ -70,7 +89,7 @@ export default function MaintenancePage() {
         </div>
         
         <button 
-          onClick={fetchDiagnostics}
+          onClick={fetchData}
           className="flex items-center gap-2 bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-lg font-bold border border-border transition-all"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -98,9 +117,14 @@ export default function MaintenancePage() {
           <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
             <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-4">Status Komponenti</h3>
             <div className="space-y-6">
-              <ComponentGauge name="Mešalica (Mixer)" score={report?.components.mixer.score} status={report?.components.mixer.status} />
-              <ComponentGauge name="Transportna Traka" score={report?.components.conveyor.score} status={report?.components.conveyor.status} />
-              <ComponentGauge name="Silosi" score={report?.components.silo.score} status={report?.components.silo.status} />
+              {assets.map((asset) => (
+                <ComponentGauge 
+                  key={asset.id}
+                  name={asset.name} 
+                  score={asset.healthScore} 
+                  status={asset.status === "FAILED" ? "CRITICAL" : (asset.healthScore < 60 ? "WARNING" : "GOOD")} 
+                />
+              ))}
             </div>
           </div>
         </div>
@@ -118,45 +142,80 @@ export default function MaintenancePage() {
            </div>
 
            {/* Active Alerts */}
-           <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg">
-             <div className="p-6 border-b border-border bg-muted/20 flex justify-between items-center">
-               <h3 className="text-sm font-bold uppercase flex items-center gap-2">
-                 <AlertTriangle className="h-5 w-5 text-amber-500" />
-                 AI Alert Feed ({report?.alerts.length})
-               </h3>
-               <button className="text-[10px] font-bold text-primary hover:underline">ARHIVIRAJ SVE</button>
-             </div>
-             <div className="divide-y divide-border">
-               {report?.alerts.length === 0 ? (
-                 <div className="p-12 text-center text-muted-foreground italic flex flex-col items-center gap-2">
-                   <ShieldCheck className="h-10 w-10 opacity-20" />
-                   Nisu otkrivene kritične anomalije.
-                 </div>
-               ) : report?.alerts.map((alert: any) => (
-                 <div key={alert.id} className="p-6 flex items-start justify-between group hover:bg-muted/30 transition-colors">
-                    <div className="flex gap-4">
-                      <div className={`p-3 rounded-xl ${alert.type === 'URGENT' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
-                         <Activity className={`h-5 w-5 ${alert.type === 'URGENT' ? 'text-red-500' : 'text-amber-500'}`} />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold uppercase">{alert.component}</span>
-                          <Badge variant="outline" className={`text-[8px] font-bold h-4 ${alert.type === 'URGENT' ? 'text-red-500 border-red-500/20' : 'text-amber-500 border-amber-500/20'}`}>
-                            {alert.type}
-                          </Badge>
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-lg">
+              <div className="p-6 border-b border-border bg-muted/20 flex justify-between items-center">
+                <h3 className="text-sm font-bold uppercase flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  Operativni Tiketi ({assets.reduce((acc, a) => acc + a.tickets.filter((t:any) => t.status === 'OPEN').length, 0)})
+                </h3>
+              </div>
+              <div className="divide-y divide-border">
+                {assets.every(a => a.tickets.filter((t:any) => t.status === 'OPEN').length === 0) ? (
+                  <div className="p-12 text-center text-muted-foreground italic flex flex-col items-center gap-2">
+                    <ShieldCheck className="h-10 w-10 opacity-20" />
+                    Svi tiketi su zatvoreni.
+                  </div>
+                ) : assets.map(asset => (
+                  asset.tickets.filter((t:any) => t.status === 'OPEN').map((ticket: any) => (
+                    <div key={ticket.id} className="p-6 flex items-start justify-between group hover:bg-muted/30 transition-colors">
+                        <div className="flex gap-4">
+                          <div className={`p-3 rounded-xl ${ticket.priority === 'URGENT' || ticket.priority === 'HIGH' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
+                             <Activity className={`h-5 w-5 ${ticket.priority === 'URGENT' || ticket.priority === 'HIGH' ? 'text-red-500' : 'text-amber-500'}`} />
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold uppercase">{asset.name}</span>
+                              <Badge variant="outline" className={`text-[8px] font-bold h-4 ${ticket.priority === 'URGENT' ? 'text-red-500 border-red-500/20' : 'text-amber-500 border-amber-500/20'}`}>
+                                {ticket.priority}
+                              </Badge>
+                            </div>
+                            <p className="text-sm font-bold">{ticket.title}</p>
+                            <p className="text-xs text-muted-foreground">{ticket.description}</p>
+                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                               <Clock className="h-3 w-3" />
+                               Kreirano: {new Date(ticket.createdAt).toLocaleString()}
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm font-medium">{alert.message}</p>
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                           <Clock className="h-3 w-3" />
-                           {new Date(alert.timestamp).toLocaleString()}
-                        </div>
-                      </div>
+                        <button 
+                          onClick={() => handleResolveTicket(asset.id, ticket.id)}
+                          className="bg-primary text-white px-4 py-2 rounded-lg text-[10px] font-bold hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                        >
+                          ZATVORI TIKET
+                        </button>
                     </div>
-                    <button className="bg-muted px-4 py-2 rounded-lg text-[10px] font-bold hover:bg-primary hover:text-white transition-all">ANALIZIRAJ</button>
-                 </div>
-               ))}
-             </div>
-           </div>
+                  ))
+                ))}
+              </div>
+            </div>
+
+            {/* Service Logs */}
+            <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-border bg-muted/10 font-bold text-xs uppercase tracking-widest">
+                   Istorija Servisa (Logovi)
+                </div>
+                <div className="divide-y divide-border">
+                   {assets.flatMap(a => a.logs).slice(0, 5).map((log: any) => (
+                     <div key={log.id} className="p-4 flex items-center justify-between text-xs hover:bg-muted/20 transition-colors">
+                        <div className="flex items-center gap-3">
+                           <div className="h-2 w-2 rounded-full bg-blue-500" />
+                           <div>
+                              <span className="font-bold">{assets.find(a => a.id === log.assetId)?.name}</span>
+                              <span className="mx-2 text-muted-foreground">|</span>
+                              <span>{log.description}</span>
+                           </div>
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                           {new Date(log.timestamp).toLocaleDateString()}
+                        </div>
+                     </div>
+                   ))}
+                   {assets.flatMap(a => a.logs).length === 0 && (
+                     <div className="p-8 text-center text-muted-foreground italic text-xs">Nema zabeleženih servisnih zapisa.</div>
+                   )}
+                </div>
+            </div>
+
 
            {/* Safety Section */}
            <div className="p-6 bg-muted/40 border border-border rounded-2xl flex items-center gap-6">

@@ -126,3 +126,42 @@ model AuditLog {
   description String?
   timestamp   DateTime @default(now())
 }
+
+// ─── Maintenance & Asset Management ──────────────────────────────────────────
+model Asset {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique // e.g. "Mixer_Motor_A", "Belt_1"
+  type            String            // MOTOR | PUMP | CONVEYOR | SILO | STRUCTURE
+  installDate     DateTime          @default(now())
+  expectedLife    Int               // Expected life in production volume (m3) or hours
+  currentUsage    Float             @default(0) // Current volume or hours
+  healthScore     Float             @default(100)
+  lastService     DateTime?
+  status          String            @default("OPERATIONAL") // OPERATIONAL | MAINTENANCE | FAILED
+  logs            MaintenanceLog[]
+  tickets         MaintenanceTicket[]
+}
+
+model MaintenanceLog {
+  id          Int      @id @default(autoincrement())
+  assetId     Int
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  action      String   // REPAIR | SERVICE | INSPECTION | CLEANING
+  description String
+  performedBy String?
+  cost        Float?
+  timestamp   DateTime @default(now())
+}
+
+model MaintenanceTicket {
+  id          Int      @id @default(autoincrement())
+  assetId     Int
+  asset       Asset    @relation(fields: [assetId], references: [id])
+  title       String
+  description String
+  priority    String   @default("MEDIUM") // LOW | MEDIUM | HIGH | URGENT
+  status      String   @default("OPEN") // OPEN | IN_PROGRESS | RESOLVED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

@@ -27,11 +27,16 @@ async function main() {
 
   // ─── Clear all data (order matters due to FK constraints) ─────────────────
   await prisma.auditLog.deleteMany();
-  await prisma.sensorReading.deleteMany();
+  await prisma.shift.deleteMany();
   await prisma.deliveryNote.deleteMany();
+  await prisma.telemetryLog.deleteMany();
+  await prisma.maintenanceTicket.deleteMany();
+  await prisma.maintenanceLog.deleteMany();
+  await prisma.sensorReading.deleteMany();
   await prisma.productionOrder.deleteMany();
-  await prisma.recipe.deleteMany();
+  await prisma.asset.deleteMany();
   await prisma.inventory.deleteMany();
+  await prisma.recipe.deleteMany();
   await prisma.operator.deleteMany();
 
   // ─── Operators ────────────────────────────────────────────────────────────
@@ -62,6 +67,61 @@ async function main() {
       role: "VIEWER" 
     },
   });
+
+  // ─── Phase 6: Assets ──────────────────────────────────────────────────────
+  const mixerAsset = await prisma.asset.create({
+    data: {
+      name: "Glavna Mešalica (Turbo)",
+      type: "MOTOR",
+      expectedLife: 10000,
+      currentUsage: 2450,
+      healthScore: 82,
+      status: "OPERATIONAL"
+    }
+  });
+
+  const beltAsset = await prisma.asset.create({
+    data: {
+      name: "Transportna Traka 1",
+      type: "CONVEYOR",
+      expectedLife: 5000,
+      currentUsage: 4100,
+      healthScore: 45,
+      status: "OPERATIONAL"
+    }
+  });
+
+  const screwAsset = await prisma.asset.create({
+    data: {
+      name: "Cementni Puž S1",
+      type: "MOTOR",
+      expectedLife: 8000,
+      currentUsage: 1200,
+      healthScore: 95,
+      status: "OPERATIONAL"
+    }
+  });
+
+  await prisma.maintenanceTicket.create({
+    data: {
+      assetId: beltAsset.id,
+      title: "Habanje ivice trake",
+      description: "Traka 1 pokazuje znake bočnog habanja. Potrebna centriranje.",
+      priority: "HIGH",
+      status: "OPEN"
+    }
+  });
+
+  await prisma.maintenanceLog.create({
+    data: {
+      assetId: mixerAsset.id,
+      action: "SERVICE",
+      description: "Redovna zamena ulja u reduktoru i provera lopatica.",
+      performedBy: "Ekipa Održavanja",
+      cost: 450
+    }
+  });
+
   console.log("  ✓ Created 3 operators with hashed passwords");
 
   // ─── Recipes ──────────────────────────────────────────────────────────────
@@ -171,8 +231,8 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", JSON.stringify(e, null, 2));
-    if (e.cause) console.error("Cause:", JSON.stringify(e.cause, null, 2));
+    console.error("❌ Seed failed:");
+    console.error(e);
     process.exit(1);
   })
   .finally(async () => {

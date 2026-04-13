@@ -7,9 +7,11 @@ import { PLANT_CONFIG } from "./types";
 
 interface ConveyorProps {
   active: boolean;
+  maintenanceScore?: number;
 }
 
-const Conveyor = React.memo(function Conveyor({ active }: ConveyorProps) {
+
+const Conveyor = React.memo(function Conveyor({ active, maintenanceScore = 100 }: ConveyorProps) {
   const beltMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const { position, rotation, length } = PLANT_CONFIG.conveyor;
 
@@ -54,11 +56,11 @@ const Conveyor = React.memo(function Conveyor({ active }: ConveyorProps) {
         <meshStandardMaterial
           ref={beltMatRef}
           map={beltTexture}
-          color={active ? "#10b981" : "#374151"}
+          color={maintenanceScore < 30 ? "#ef4444" : (maintenanceScore < 70 ? "#f59e0b" : (active ? "#10b981" : "#374151"))}
           metalness={0.1}
           roughness={0.9}
-          emissive={active ? "#065f46" : "#000000"}
-          emissiveIntensity={active ? 0.3 : 0}
+          emissive={maintenanceScore < 30 ? "#7f1d1d" : (maintenanceScore < 70 ? "#78350f" : (active ? "#065f46" : "#000000"))}
+          emissiveIntensity={maintenanceScore < 85 ? 0.6 : (active ? 0.3 : 0)}
         />
       </mesh>
 

@@ -147,13 +147,16 @@ function SceneContent({
         />
         <AggregateBins inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
         <ScalePlatform active={hasActiveOrder} />
-        <WaterTanks streamReadings={streamReadings} onSelect={onSelect} />
-        <Conveyor active={hasActiveOrder} />
+        <WaterTanks streamReadings={streamReadings} onSelect={handleSelect} />
+        <Conveyor 
+          active={hasActiveOrder} 
+          maintenanceScore={maintenanceReport?.components.conveyor.score || 100} 
+        />
         <MixerUnit 
           active={hasActiveOrder} 
           vibration={streamData?.readings?.find((r: any) => r.sensorType === 'VIBRATION')?.value || 0}
           maintenanceScore={maintenanceReport?.components.mixer.score || 100}
-          onSelect={() => onSelect("mixer", "MEŠALICA", hasActiveOrder ? 1 : 0)} 
+          onSelect={() => handleSelect("mixer", "MEŠALICA", hasActiveOrder ? 1 : 0)} 
         />
         <MixerParticles active={hasActiveOrder} position={[mixerPos[0], mixerPos[1] + 0.6, mixerPos[2]]} />
         <Pipes />
