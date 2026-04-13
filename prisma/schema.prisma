@@ -1,0 +1,43 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Recipe {
+  id              Int               @id @default(autoincrement())
+  name            String
+  cementAmount    Float
+  waterAmount     Float
+  sandAmount      Float
+  gravelAmount    Float
+  admixtureAmount Float?
+  createdAt       DateTime          @default(now())
+  ProductionOrder ProductionOrder[]
+}
+
+model ProductionOrder {
+  id        Int      @id @default(autoincrement())
+  recipeId  Int
+  recipe    Recipe   @relation(fields: [recipeId], references: [id])
+  quantity  Float
+  status    String   // PENDING, IN_PROGRESS, COMPLETED
+  createdAt DateTime @default(now())
+}
+
+model Inventory {
+  id        Int      @id @default(autoincrement())
+  material  String
+  amount    Float
+  capacity  Float
+  updatedAt DateTime @updatedAt
+}
+
+model Operator {
+  id        Int      @id @default(autoincrement())
+  name      String
+  role      String
+}
