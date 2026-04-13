@@ -15,6 +15,7 @@ import Pipes from "./scene/Pipes";
 import MixerParticles from "./scene/MixerParticles";
 import Scaffolding from "./scene/Scaffolding";
 import Ground from "./scene/Ground";
+import ScalePlatform from "./scene/ScalePlatform";
 
 // ─── Typing from types.ts  ────────────────────────────────────────────────────
 export interface StreamData {
@@ -131,6 +132,7 @@ function SceneContent({
       <group>
         <Silos inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
         <AggregateBins inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
+        <ScalePlatform active={hasActiveOrder} />
         <WaterTanks streamReadings={streamReadings} onSelect={onSelect} />
         <Conveyor active={hasActiveOrder} />
         <MixerUnit active={hasActiveOrder} onSelect={() => onSelect("mixer", "MEŠALICA", hasActiveOrder ? 1 : 0)} />

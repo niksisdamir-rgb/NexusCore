@@ -44,9 +44,9 @@ export class VoiceCommandAgent {
     `;
 
     try {
-      const response = await this.llm.generate(prompt);
+      const response = await this.llm.generate({ prompt });
       // Clean possible markdown backticks
-      const cleanJson = response.replace(/```json|```/g, "").trim();
+      const cleanJson = response.text.replace(/```json|```/g, "").trim();
       return JSON.parse(cleanJson);
     } catch (error) {
        console.error("VoiceAgent Error:", error);

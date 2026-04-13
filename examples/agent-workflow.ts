@@ -1,7 +1,7 @@
 import { 
   Agent, Tool, GeminiProvider, GeminiEmbedding, 
   DocumentExtractor, TextSplitter, MemoryVectorStore 
-} from '../../src';
+} from '../src';
 
 async function main() {
   console.log('--- NexusCore Framework RAG Agent Example ---');
