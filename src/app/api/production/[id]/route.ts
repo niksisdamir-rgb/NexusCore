@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { telemetryEmitter } from "@/lib/events";
 
 // ─── GET /api/production/[id] ─────────────────────────────────────────────
 export async function GET(
@@ -75,6 +76,10 @@ export async function PATCH(
       });
 
       if (shortages.length > 0) {
+        telemetryEmitter.emitEvent("PRODUCTION_SHORTAGE", { 
+          orderId: id, 
+          shortages: shortages.map(s => s.name) 
+        });
         return NextResponse.json({
           success: false,
           error: "Nedovoljno materijala u skladištu",
@@ -139,6 +144,12 @@ export async function PATCH(
         ] : [])
       ]);
 
+      telemetryEmitter.emitEvent("PRODUCTION_COMPLETED", { 
+        orderId: id, 
+        recipe: updatedOrder.recipe.name,
+        volume: updatedOrder.quantity 
+      });
+
       return NextResponse.json({ success: true, order: updatedOrder });
     }
 
@@ -151,6 +162,13 @@ export async function PATCH(
       },
       include: { recipe: true },
     });
+
+    if (status === "IN_PROGRESS") {
+      telemetryEmitter.emitEvent("PRODUCTION_STARTED", { 
+        orderId: id, 
+        recipe: updated.recipe.name 
+      });
+    }
 
     return NextResponse.json({ success: true, order: updated });
   } catch (error: any) {
@@ -187,6 +205,11 @@ export async function DELETE(
       where: { id: Number(id) },
       data: { status: "CANCELLED" },
       include: { recipe: true },
+    });
+
+    telemetryEmitter.emitEvent("PRODUCTION_CANCELLED", { 
+      orderId: id, 
+      recipe: cancelled.recipe.name 
     });
 
     return NextResponse.json({ success: true, order: cancelled, message: "Order cancelled" });

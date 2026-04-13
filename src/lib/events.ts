@@ -1,22 +1,37 @@
 import { EventEmitter } from "events";
 
 /**
- * Global Event Bus for the NexusCore backend.
- * Facilitates real-time communication between background workers 
- * and API streaming routes (SSE).
+ * Global telemetry event bus for the SCADA system.
+ * Allows various API routes to emit events that are then 
+ * streamed to all connected clients via SSE.
  */
-class GlobalEventBus extends EventEmitter {}
+class TelemetryEmitter extends EventEmitter {
+  private static instance: TelemetryEmitter;
 
-const globalForEvents = globalThis as unknown as {
-  eventBus: GlobalEventBus | undefined;
-};
+  private constructor() {
+    super();
+    // Increase listeners limit for industrial scalability
+    this.setMaxListeners(100);
+  }
 
-// Global singleton instance
-export const eventBus = globalForEvents.eventBus ?? new GlobalEventBus();
+  public static getInstance(): TelemetryEmitter {
+    if (!TelemetryEmitter.instance) {
+      TelemetryEmitter.instance = new TelemetryEmitter();
+    }
+    return TelemetryEmitter.instance;
+  }
 
-if (process.env.NODE_ENV !== "production") {
-  globalForEvents.eventBus = eventBus;
+  /**
+   * Helper to emit a typed telemetry event
+   */
+  public emitEvent(type: string, data: any) {
+    this.emit("telemetry", {
+      type,
+      data,
+      timestamp: new Date().toISOString(),
+      id: Math.random().toString(36).substring(2, 11)
+    });
+  }
 }
 
-// Increase max listeners for many concurrent SSE connections
-eventBus.setMaxListeners(100);
+export const telemetryEmitter = TelemetryEmitter.getInstance();
