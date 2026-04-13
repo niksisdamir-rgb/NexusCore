@@ -15,3 +15,4 @@ export * from './llm/embeddings/GeminiEmbedding';
 export * from './data/vectorstores/BaseVectorStore';
 export * from './data/vectorstores/MemoryVectorStore';
 export * from './data/vectorstores/ChromaVectorStore';
+export * from './workflows';
