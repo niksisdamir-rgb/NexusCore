@@ -6,6 +6,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// ─── Concrete Mix Recipes ──────────────────────────────────────────────────
 model Recipe {
   id              Int               @id @default(autoincrement())
   name            String
@@ -18,25 +19,65 @@ model Recipe {
   ProductionOrder ProductionOrder[]
 }
 
+// ─── Production Orders ─────────────────────────────────────────────────────
 model ProductionOrder {
-  id        Int      @id @default(autoincrement())
-  recipeId  Int
-  recipe    Recipe   @relation(fields: [recipeId], references: [id])
-  quantity  Float
-  status    String   // PENDING, IN_PROGRESS, COMPLETED
-  createdAt DateTime @default(now())
+  id           Int           @id @default(autoincrement())
+  recipeId     Int
+  recipe       Recipe        @relation(fields: [recipeId], references: [id])
+  quantity     Float
+  status       String        // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
+  createdAt    DateTime      @default(now())
+  DeliveryNote DeliveryNote?
 }
 
+// ─── Inventory / Material Stock ────────────────────────────────────────────
 model Inventory {
-  id        Int      @id @default(autoincrement())
-  material  String
-  amount    Float
-  capacity  Float
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  material     String   @unique
+  amount       Float
+  capacity     Float
+  unit         String   @default("kg")   // kg | L | t | m³
+  lowThreshold Float    @default(0)      // alert when amount drops below this
+  updatedAt    DateTime @updatedAt
 }
 
+// ─── Operators / Users ─────────────────────────────────────────────────────
 model Operator {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   name      String
-  role      String
+  role      String     // ADMIN | OPERATOR | VIEWER
+  AuditLog  AuditLog[]
+}
+
+// ─── Delivery Notes (Otpremnice) ───────────────────────────────────────────
+model DeliveryNote {
+  id          Int             @id @default(autoincrement())
+  orderId     Int             @unique
+  order       ProductionOrder @relation(fields: [orderId], references: [id])
+  clientName  String
+  truckPlate  String
+  volumeM3    Float
+  deliveredAt DateTime        @default(now())
+}
+
+// ─── Sensor Readings (SCADA telemetry) ────────────────────────────────────
+model SensorReading {
+  id          Int      @id @default(autoincrement())
+  sensorId    String   // e.g. "cement_silo_1", "mixer_temp"
+  sensorType  String   // LEVEL | TEMPERATURE | PRESSURE | FLOW | WEIGHT
+  value       Float
+  unit        String   // %, °C, bar, L/min, kg
+  recordedAt  DateTime @default(now())
+}
+
+// ─── Audit Log (traceability) ──────────────────────────────────────────────
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  action      String   // CREATE | UPDATE | DELETE | STATUS_CHANGE | AI_EXTRACT
+  entityType  String   // Recipe | ProductionOrder | Inventory | DeliveryNote
+  entityId    Int
+  operatorId  Int?
+  operator    Operator? @relation(fields: [operatorId], references: [id])
+  description String?
+  timestamp   DateTime @default(now())
 }
