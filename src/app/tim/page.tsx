@@ -257,6 +257,39 @@ export default function WorkforcePage() {
              </div>
           </div>
 
+          {/* Team Members List (Simplified CRUD) */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden mt-6">
+             <div className="p-4 border-b border-border bg-muted/30 font-bold text-xs uppercase tracking-widest flex items-center justify-between">
+                <span>Upravljanje Timom</span>
+                <Badge variant="outline" className="text-[9px] cursor-pointer hover:bg-muted">+ Dodaj Operatera</Badge>
+             </div>
+             <div className="p-0 overflow-x-auto">
+                <table className="w-full text-left text-xs md:text-sm">
+                   <thead>
+                      <tr className="border-b border-border text-muted-foreground bg-muted/10">
+                         <th className="px-6 py-3 font-medium uppercase tracking-wider">Ime</th>
+                         <th className="px-6 py-3 font-medium uppercase tracking-wider">Identitet</th>
+                         <th className="px-6 py-3 font-medium uppercase tracking-wider">Uloga</th>
+                         <th className="px-6 py-3 font-medium uppercase tracking-wider">Akcije</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-border">
+                      {(analysis?.operators || []).map((op: any) => (
+                        <tr key={op.id} className="hover:bg-muted/30 transition-colors">
+                           <td className="px-6 py-4 font-bold">{op.name}</td>
+                           <td className="px-6 py-4 text-muted-foreground font-mono text-[10px]">{op.email || `${op.username}@nexus`}</td>
+                           <td className="px-6 py-4">
+                              <Badge variant="secondary" className="scale-75 origin-left uppercase font-black">{op.role || 'OPERATOR'}</Badge>
+                           </td>
+                           <td className="px-6 py-4">
+                              <button className="text-[10px] text-primary hover:underline font-bold uppercase tracking-tighter">Uredi</button>
+                           </td>
+                        </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
+          </div>
         </div>
 
       </div>
