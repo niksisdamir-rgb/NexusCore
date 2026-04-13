@@ -5,7 +5,7 @@
  * Handles unit normalization (g→kg, mL→L) and validates required fields.
  */
 
-import { GeminiProvider } from "../llm/providers/GeminiProvider";
+import { GeminiProvider } from "../../llm/providers/GeminiProvider";
 
 export interface ExtractedRecipe {
   name: string;
