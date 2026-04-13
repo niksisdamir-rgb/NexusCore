@@ -1,7 +1,11 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { execSync } from 'child_process';
 
-const prisma = new PrismaClient();
+const TEST_DB_URL = 'file:./tests/test.db';
+const adapter = new PrismaBetterSqlite3({ url: TEST_DB_URL });
+const prisma = new PrismaClient({ adapter });
+
 
 beforeAll(async () => {
   // Ensure we are using a test database environment
