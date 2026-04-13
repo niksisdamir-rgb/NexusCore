@@ -22,13 +22,29 @@ model Recipe {
 
 // ─── Production Orders ─────────────────────────────────────────────────────
 model ProductionOrder {
-  id           Int           @id @default(autoincrement())
+  id           Int            @id @default(autoincrement())
   recipeId     Int
-  recipe       Recipe        @relation(fields: [recipeId], references: [id])
+  recipe       Recipe         @relation(fields: [recipeId], references: [id])
   quantity     Float
-  status       String        // PENDING | IN_PROGRESS | COMPLETED | CANCELLED
-  createdAt    DateTime      @default(now())
-  DeliveryNote DeliveryNote?
+  status       String         @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  DeliveryNote DeliveryNote[]
+  TelemetryLog TelemetryLog[]
+}
+
+model TelemetryLog {
+  id              Int             @id @default(autoincrement())
+  orderId         Int
+  order           ProductionOrder @relation(fields: [orderId], references: [id])
+  mixerLoad       Float
+  temperature     Float
+  humidity        Float
+  vibrationLevel  Float           @default(0)
+  timestamp       DateTime        @default(now())
+
+  @@index([orderId])
+  @@index([timestamp])
 }
 
 // ─── Inventory / Material Stock ────────────────────────────────────────────

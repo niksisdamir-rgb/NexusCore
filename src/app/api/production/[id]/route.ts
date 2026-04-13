@@ -43,6 +43,50 @@ export async function PATCH(
       );
     }
 
+    // ─ Logic for Inventory Pre-Check on IN_PROGRESS ─
+    if (status === "IN_PROGRESS") {
+      const order = await prisma.productionOrder.findUnique({
+        where: { id: Number(id) },
+        include: { recipe: true },
+      });
+
+      if (!order) {
+        return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+      }
+
+      const { recipe, quantity } = order;
+      
+      // Check all required materials
+      const materials = [
+        { name: "Cement CEM I 42.5R", required: recipe.cementAmount * quantity },
+        { name: "Pijesak 0-4mm", required: recipe.sandAmount * quantity },
+        { name: "Šljunak 8-16mm", required: recipe.gravelAmount * quantity },
+        { name: "Voda", required: recipe.waterAmount * quantity },
+        ...(recipe.admixtureAmount ? [{ name: "Aditiv Sika ViscoCrete", required: recipe.admixtureAmount * quantity }] : [])
+      ];
+
+      const invItems = await prisma.inventory.findMany({
+        where: { material: { in: materials.map(m => m.name) } }
+      });
+
+      const shortages = materials.filter(m => {
+        const item = invItems.find(i => i.material === m.name);
+        return !item || item.amount < m.required;
+      });
+
+      if (shortages.length > 0) {
+        return NextResponse.json({
+          success: false,
+          error: "Nedovoljno materijala u skladištu",
+          shortages: shortages.map(s => ({
+            material: s.name,
+            required: s.required,
+            available: invItems.find(i => i.material === s.name)?.amount || 0
+          }))
+        }, { status: 409 });
+      }
+    }
+
     // ─ Logic for Inventory Depletion on Completion ─
     if (status === "COMPLETED") {
       const order = await prisma.productionOrder.findUnique({
