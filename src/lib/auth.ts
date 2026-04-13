@@ -1,0 +1,73 @@
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import * as bcrypt from "bcryptjs";
+
+const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
+const adapter = new PrismaBetterSqlite3({ url });
+const prisma = new PrismaClient({ adapter });
+
+export const authOptions: NextAuthOptions = {
+  session: {
+    strategy: "jwt",
+  },
+  providers: [
+    CredentialsProvider({
+      name: "Elkonmix Credentials",
+      credentials: {
+        email: { label: "Email", type: "email", placeholder: "admin@elkonmix.com" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Missing credentials");
+        }
+
+        const operator = await prisma.operator.findUnique({
+          where: { email: credentials.email },
+        });
+
+        if (!operator || !operator.password) {
+          throw new Error("Operator not found");
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          operator.password
+        );
+
+        if (!isPasswordValid) {
+          throw new Error("Invalid password");
+        }
+
+        return {
+          id: operator.id.toString(),
+          email: operator.email,
+          name: operator.name,
+          role: operator.role,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as any).role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as any).id = token.id;
+        (session.user as any).role = token.role;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/login",
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};

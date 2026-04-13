@@ -168,7 +168,8 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", e);
+    console.error("❌ Seed failed:", JSON.stringify(e, null, 2));
+    if (e.cause) console.error("Cause:", JSON.stringify(e.cause, null, 2));
     process.exit(1);
   })
   .finally(async () => {
