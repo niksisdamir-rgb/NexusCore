@@ -32,12 +32,8 @@ function createPrismaClient() {
   console.log("[Prisma] Resolved dbPath:", dbPath);
   
   try {
-    console.log("[Prisma] Attempting new Database()...");
-    const db = new Database(dbPath);
-    console.log("[Prisma] Database instance created.");
-    
-    console.log("[Prisma] Attempting new PrismaBetterSqlite3()...");
-    const adapter = new PrismaBetterSqlite3(db);
+    console.log("[Prisma] Attempting new PrismaBetterSqlite3 with url:", `file:${dbPath}`);
+    const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
     console.log("[Prisma] Adapter created.");
     
     console.log("[Prisma] Attempting new PrismaClient()...");
