@@ -165,3 +165,35 @@ model MaintenanceTicket {
   updatedAt   DateTime @updatedAt
 }
 
+// ─── Logistics & Fleet Management ───────────────────────────────────────────
+model Vehicle {
+  id              String   @id // e.g. "T-01"
+  plate           String   @unique
+  driver          String
+  type            String   @default("MIXER") // MIXER | PUMP | SERVICE
+  status          String   @default("IDLE")  // IDLE | LOADING | TRANSIT | DELIVERING | RETURNING
+  capacity        Float    @default(9.0)     // m3
+  currentLoad     Float    @default(0)       // m3
+  lastLat         Float    @default(0)
+  lastLng         Float    @default(0)
+  progress        Float    @default(0)       // 0-100%
+  destination     String?
+  currentOrderId  String?
+  lastUpdate      DateTime @default(now())
+}
+
+model SiloRefillOrder {
+  id          Int      @id @default(autoincrement())
+  inventoryId Int
+  material    String
+  quantity    Float    // kg or L
+  unit        String
+  status      String   @default("PENDING") // PENDING | ORDERED | IN_TRANSIT | COMPLETED | CANCELLED
+  provider    String?  // Supplier name
+  eta         DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([inventoryId])
+}
+

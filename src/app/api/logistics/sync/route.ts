@@ -1,0 +1,103 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+
+// ─── POST /api/logistics/sync ──────────────────────────────────────────
+// Simulates fleet movement and status transitions
+export async function POST() {
+  try {
+    const vehicles = await prisma.vehicle.findMany();
+
+    const updatedVehicles = [];
+
+    for (const truck of vehicles) {
+      if (truck.status === "IDLE") continue;
+
+      let newProgress = truck.progress + (Math.random() * 5);
+      let newStatus = truck.status;
+      let newLat = truck.lastLat;
+      let newLng = truck.lastLng;
+
+      // Simple radial simulation
+      if (truck.status === "TRANSIT") {
+        newLat += (Math.random() - 0.4) * 0.001;
+        newLng += (Math.random() - 0.5) * 0.001;
+        if (newProgress >= 100) {
+          newProgress = 0;
+          newStatus = "DELIVERING";
+        }
+      } else if (truck.status === "LOADING") {
+        if (newProgress >= 100) {
+          newProgress = 0;
+          newStatus = "TRANSIT";
+        }
+      } else if (truck.status === "DELIVERING") {
+        if (newProgress >= 100) {
+          newProgress = 0;
+          newStatus = "RETURNING";
+        }
+      } else if (truck.status === "RETURNING") {
+        // Move back toward plant origin
+        newLat -= Math.sign(newLat) * 0.0005;
+        newLng -= Math.sign(newLng) * 0.0005;
+        if (newProgress >= 100) {
+          newStatus = "IDLE";
+          newProgress = 0;
+        }
+      }
+
+      const updated = await prisma.vehicle.update({
+        where: { id: truck.id },
+        data: {
+          progress: Math.min(newProgress, 100),
+          status: newStatus,
+          lastLat: newLat,
+          lastLng: newLng,
+          lastUpdate: new Date(),
+        },
+      });
+      updatedVehicles.push(updated);
+    }
+
+    // Also advance refill orders
+    const activeRefillOrders = await prisma.siloRefillOrder.findMany({
+      where: { status: { notIn: ["COMPLETED", "CANCELLED"] } }
+    });
+
+    for (const order of activeRefillOrders) {
+      if (order.status === "PENDING") {
+        await prisma.siloRefillOrder.update({
+          where: { id: order.id },
+          data: { status: "ORDERED" }
+        });
+      } else if (order.status === "ORDERED") {
+        if (Math.random() > 0.7) {
+          await prisma.siloRefillOrder.update({
+            where: { id: order.id },
+            data: { status: "IN_TRANSIT", eta: new Date(Date.now() + 15 * 60000) }
+          });
+        }
+      } else if (order.status === "IN_TRANSIT") {
+        if (Math.random() > 0.8) {
+          await prisma.siloRefillOrder.update({
+            where: { id: order.id },
+            data: { status: "COMPLETED" }
+          });
+          // Update actual inventory
+          await prisma.inventory.update({
+            where: { id: order.inventoryId },
+            data: { amount: { increment: order.quantity } }
+          });
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      updatedCount: updatedVehicles.length,
+      refillOrdersCount: activeRefillOrders.length,
+    });
+  } catch (error: any) {
+    console.error("Error syncing logistics:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}

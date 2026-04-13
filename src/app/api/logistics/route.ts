@@ -1,0 +1,57 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+
+// ─── GET /api/logistics ───────────────────────────────────────────────────
+// Returns all vehicles and active refill orders
+export async function GET() {
+  try {
+    const vehicles = await prisma.vehicle.findMany({
+      orderBy: { id: "asc" },
+    });
+
+    const refillOrders = await prisma.siloRefillOrder.findMany({
+      where: {
+        status: { notIn: ["COMPLETED", "CANCELLED"] },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({
+      success: true,
+      vehicles,
+      refillOrders,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error("Error fetching logistics data:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// ─── POST /api/logistics ──────────────────────────────────────────────────
+// Seed or reset fleet data for demo purposes
+export async function POST() {
+  try {
+    const INITIAL_VEHICLES = [
+      { id: "T-01", plate: "BG-123-AA", driver: "Marko M.", status: "TRANSIT", progress: 65, destination: "Gradilište 'West 65'", currentLoad: 9, currentOrderId: "ORD-5501" },
+      { id: "T-02", plate: "BG-456-BB", driver: "Nikola P.", status: "LOADING", progress: 20, destination: "Zemun Polje", currentLoad: 7, currentOrderId: "ORD-5502" },
+      { id: "T-03", plate: "BG-789-CC", driver: "Jovan S.", status: "DELIVERING", progress: 100, destination: "Novi Beograd", currentLoad: 9, currentOrderId: "ORD-5498" },
+      { id: "T-04", plate: "NS-101-DD", driver: "Stefan T.", status: "RETURNING", progress: 40, destination: "Pogon Elkonmix-90", currentLoad: 0 },
+      { id: "T-05", plate: "BG-202-EE", driver: "Petar I.", status: "IDLE", progress: 0 },
+    ];
+
+    // Seed vehicles
+    for (const v of INITIAL_VEHICLES) {
+      await prisma.vehicle.upsert({
+        where: { id: v.id },
+        update: v,
+        create: v,
+      });
+    }
+
+    return NextResponse.json({ success: true, message: "Fleet data seeded successfully" });
+  } catch (error: any) {
+    console.error("Error seeding logistics data:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
