@@ -145,7 +145,7 @@ function SceneContent({
       <ContactShadows position={[0, 0.01, 0]} opacity={0.5} scale={50} blur={1.5} far={12} />
 
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2 - 0.05} />
-      <Sky distance={45000} sunPosition={[2, 1, -1]} exposure={Math.PI} />
+      <Sky distance={45000} sunPosition={[2, 1, -1]} />
       <Environment preset="night" />
 
       {/* Bloom — glows the mixer emissive material when active */}

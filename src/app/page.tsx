@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { 
   Card, 
@@ -22,6 +22,7 @@ import {
 import { useSensorStream } from "@/hooks/useSensorStream";
 
 const PlantScene = dynamic(() => import("@/components/elkonmix/PlantScene"), { ssr: false });
+const VoiceAssistant = dynamic(() => import("@/components/elkonmix/VoiceAssistant"), { ssr: false });
 
 export default function DashboardPage() {
   const { data: streamData, status: streamStatus } = useSensorStream();
@@ -60,6 +61,26 @@ export default function DashboardPage() {
     fetchData();
     const interval = setInterval(fetchData, 15000); // Pulse every 15s for structural data
     return () => clearInterval(interval);
+  }, []);
+
+  const handleVoiceAction = useCallback((action: any) => {
+    console.log("Voice action received:", action);
+    
+    // Simulate local state update for immediate feedback in the Digital Twin
+    if (action.intent === "START_PRODUCTION" || action.intent === "SET_RECIPE") {
+      const mockOrder = {
+        id: Math.floor(Math.random() * 1000),
+        recipe: { name: action.parameters?.recipe || "MB-30" },
+        quantity: action.parameters?.quantity || 1.0,
+        status: "IN_PROGRESS",
+        createdAt: new Date().toISOString()
+      };
+      
+      setData(prev => ({
+        ...prev,
+        orders: [mockOrder, ...prev.orders]
+      }));
+    }
   }, []);
 
   // Calculate KPIs
@@ -196,6 +217,8 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      <VoiceAssistant onAction={handleVoiceAction} />
     </div>
   );
 }

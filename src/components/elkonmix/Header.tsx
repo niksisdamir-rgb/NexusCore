@@ -34,10 +34,10 @@ export function Header() {
   const isConnecting = streamStatus === "connecting";
 
   return (
-    <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+    <header className="h-16 glass px-6 flex items-center justify-between sticky top-0 z-[50]">
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-foreground">
-          Sistem upravljanja Elkonmix-90
+        <h1 className="text-sm font-bold tracking-tight text-foreground uppercase">
+          ELKONMIX <span className="text-primary tracking-widest font-black">90</span>
         </h1>
         <div className="flex items-center gap-2">
           <Badge 
@@ -81,7 +81,7 @@ export function Header() {
           
           <div className="flex items-center gap-1">
             <div 
-              className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary transition-all hover:bg-primary/20 cursor-default"
+              className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary transition-all hover:bg-primary/20 cursor-default ring-1 ring-primary/20"
             >
               <User className="h-4 w-4" />
             </div>
