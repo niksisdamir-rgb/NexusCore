@@ -39,14 +39,16 @@ async function main() {
     data: { 
       name: "Amir Hodžić", 
       email: "admin@elkonmix.com",
+      username: "amir_admin",
       password: hashedPassword,
-      role: "ADMIN" 
+      role: "MANAGER" 
     },
   });
   const op1 = await prisma.operator.create({
     data: { 
       name: "Senad Kovač", 
       email: "operator@elkonmix.com",
+      username: "senad_op",
       password: hashedPassword,
       role: "OPERATOR" 
     },
@@ -55,6 +57,7 @@ async function main() {
     data: { 
       name: "Lejla Bašić", 
       email: "viewer@elkonmix.com",
+      username: "lejla_view",
       password: hashedPassword,
       role: "VIEWER" 
     },
