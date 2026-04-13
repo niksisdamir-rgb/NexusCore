@@ -1,8 +1,12 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
+const { PrismaBetterSqlite3 } = require("@prisma/adapter-better-sqlite3");
 const xlsx = require('xlsx');
 const path = require('path');
 
-const prisma = new PrismaClient();
+const adapter = new PrismaBetterSqlite3({ url: `file:prisma/dev.db` });
+const prisma = new PrismaClient({
+  adapter,
+});
 
 async function main() {
   const filePath = path.resolve('real data/Recipe Data Table Transcription.xlsx');
@@ -15,13 +19,12 @@ async function main() {
   let imported = 0;
   for (const row of data) {
     const name = row['Recipe Name'];
-    if (!name) continue;
+    if (!name || name === '-') continue;
 
     const cementAmount = Number(row['Cement 1'] || 0) + Number(row['Cement 2'] || 0);
     const waterAmount = Number(row['WAT 1'] || 0);
     const admixtureAmount = Number(row['Additive 1'] || 0) + Number(row['Additive 2'] || 0) + Number(row['Additive 3'] || 0);
     
-    // Assuming Aggr 3/4 are sand (fines), Aggr 1/2 are gravel (coarse)
     const sandAmount = Number(row['Aggregate 3'] || 0) + Number(row['Aggregate 4'] || 0);
     const gravelAmount = Number(row['Aggregate 1'] || 0) + Number(row['Aggregate 2'] || 0);
 
