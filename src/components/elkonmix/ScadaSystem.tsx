@@ -1,12 +1,40 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import dynamic from "next/dynamic";
 
 // Dynamically import the PlantScene so it only renders on client side (R3F)
 const PlantScene = dynamic(() => import("./PlantScene"), { ssr: false });
 
 export default function ScadaSystem() {
+  const [aiText, setAiText] = useState("Recipe Specification:\nName: High Strength C40\nCement: 350 kg\nWater: 180 L\nSand: 800 kg\nGravel: 1100 kg");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  const handleAIProcess = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/ai/process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text: aiText })
+      });
+      const data = await res.json();
+      if (data.success) {
+         setResult("Extraction Successful: " + data.aiResponse);
+      } else {
+         setResult("Error: " + data.error);
+      }
+    } catch (err: any) {
+      setResult("Fetch Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col items-center justify-start">
       <header className="w-full p-4 bg-primary text-primary-foreground flex justify-between items-center">
@@ -42,9 +70,25 @@ export default function ScadaSystem() {
                 <h3 className="font-bold mb-2">Active Recipe</h3>
                 <p className="text-2xl">C30/37 XC4</p>
              </div>
-             <div className="p-4 bg-card border-border border rounded shadow">
-                <h3 className="font-bold mb-2">AI Extraction Jobs</h3>
-                <p className="text-2xl text-green-500">0 Pending</p>
+             <div className="p-4 bg-card border-border border rounded shadow flex flex-col space-y-2 col-span-3">
+                <h3 className="font-bold mb-2">AI Extraction Playground</h3>
+                <textarea 
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  className="w-full p-2 text-sm bg-background border border-border rounded h-24"
+                />
+                <button 
+                  onClick={handleAIProcess}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full"
+                >
+                  {loading ? "Processing via Agent..." : "Process Recipe with AI"}
+                </button>
+                {result && (
+                  <div className="p-2 mt-2 bg-muted border border-border rounded text-sm break-words">
+                    {result}
+                  </div>
+                )}
              </div>
           </div>
         </main>
