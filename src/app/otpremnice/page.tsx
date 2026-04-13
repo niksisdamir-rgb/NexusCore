@@ -8,15 +8,19 @@ import {
   Printer, 
   Eye,
   Truck,
-  Calendar
+  Calendar,
+  FileDown,
+  Loader2
 } from "lucide-react";
 import { DeliveryNotePrint, DeliveryNoteData } from "@/components/DeliveryNotePrint";
+import { generateDeliveryNotePDF } from "@/lib/exportUtils";
 
 export default function OtpremnicePage() {
   const [deliveryNotes, setDeliveryNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [printingNote, setPrintingNote] = useState<DeliveryNoteData | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   const handlePrint = (note: any) => {
     const printData: DeliveryNoteData = {
@@ -39,6 +43,15 @@ export default function OtpremnicePage() {
     setTimeout(() => {
       window.print();
     }, 100);
+  };
+
+  const handleDownloadPDF = async (note: any) => {
+    setDownloadingId(note.id);
+    try {
+      await generateDeliveryNotePDF(note);
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   const fetchData = async () => {
@@ -73,7 +86,17 @@ export default function OtpremnicePage() {
           <p className="text-muted-foreground">Arhiva isporučenog betona i prateće dokumentacije.</p>
         </div>
         <div className="flex gap-2">
-           <button className="flex items-center gap-2 bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-md font-medium border border-border">
+           <button 
+             onClick={async () => {
+                for(const note of filtered) {
+                  await generateDeliveryNotePDF(note);
+                }
+             }}
+             className="flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 px-4 py-2 rounded-md font-medium shadow-sm transition-all text-sm"
+           >
+             <FileDown className="h-4 w-4" /> Preuzmi Sve (PDF)
+           </button>
+           <button className="flex items-center gap-2 bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-md font-medium border border-border text-sm">
              <Download className="h-4 w-4" /> Izvezi CSV
            </button>
         </div>
@@ -135,14 +158,22 @@ export default function OtpremnicePage() {
                 <td className="px-6 py-4 text-xs font-mono">
                   {new Date(note.deliveredAt).toLocaleTimeString()}
                 </td>
-                <td className="px-6 py-4">
+                 <td className="px-6 py-4">
                    <div className="flex justify-center gap-2">
-                      <button className="p-1.5 hover:bg-muted rounded text-muted-foreground" title="Pogledaj">
+                      <button className="p-1.5 hover:bg-muted rounded text-muted-foreground transition-colors" title="Pogledaj">
                         <Eye className="h-4 w-4" />
                       </button>
                       <button 
+                         onClick={() => handleDownloadPDF(note)}
+                         disabled={downloadingId === note.id}
+                         className="p-1.5 hover:bg-primary/10 rounded text-blue-500 transition-colors disabled:opacity-50" 
+                         title="Preuzmi PDF"
+                      >
+                        {downloadingId === note.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                      </button>
+                      <button 
                         onClick={() => handlePrint(note)}
-                        className="p-1.5 hover:bg-muted rounded text-muted-foreground" title="Štampaj"
+                        className="p-1.5 hover:bg-muted rounded text-muted-foreground transition-colors" title="Štampaj putem pretraživača"
                       >
                         <Printer className="h-4 w-4" />
                       </button>
