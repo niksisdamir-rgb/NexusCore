@@ -10,6 +10,7 @@ config({ path: ".env" });
 
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import * as bcrypt from "bcryptjs";
 
 function createClient() {
   const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
@@ -22,6 +23,8 @@ const prisma = createClient();
 async function main() {
   console.log("🌱 Seeding Elkonmix-90 database...\n");
 
+  const hashedPassword = await bcrypt.hash("password123", 10);
+
   // ─── Clear all data (order matters due to FK constraints) ─────────────────
   await prisma.auditLog.deleteMany();
   await prisma.sensorReading.deleteMany();
@@ -33,15 +36,30 @@ async function main() {
 
   // ─── Operators ────────────────────────────────────────────────────────────
   const admin = await prisma.operator.create({
-    data: { name: "Amir Hodžić", role: "ADMIN" },
+    data: { 
+      name: "Amir Hodžić", 
+      email: "admin@elkonmix.com",
+      password: hashedPassword,
+      role: "ADMIN" 
+    },
   });
   const op1 = await prisma.operator.create({
-    data: { name: "Senad Kovač", role: "OPERATOR" },
+    data: { 
+      name: "Senad Kovač", 
+      email: "operator@elkonmix.com",
+      password: hashedPassword,
+      role: "OPERATOR" 
+    },
   });
   const op2 = await prisma.operator.create({
-    data: { name: "Lejla Bašić", role: "VIEWER" },
+    data: { 
+      name: "Lejla Bašić", 
+      email: "viewer@elkonmix.com",
+      password: hashedPassword,
+      role: "VIEWER" 
+    },
   });
-  console.log("  ✓ Created 3 operators");
+  console.log("  ✓ Created 3 operators with hashed passwords");
 
   // ─── Recipes ──────────────────────────────────────────────────────────────
   const rc30 = await prisma.recipe.create({
