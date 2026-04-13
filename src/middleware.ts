@@ -9,6 +9,6 @@ export default withAuth({
 export const config = {
   // Protect all routes except login, auth APIs, and verification page
   matcher: [
-    "/((?!api/auth|login|verify|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/auth|api/sensors/stream|login|verify|_next/static|_next/image|favicon.ico).*)",
   ],
 };
