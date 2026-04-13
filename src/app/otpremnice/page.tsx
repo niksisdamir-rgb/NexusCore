@@ -10,11 +10,36 @@ import {
   Truck,
   Calendar
 } from "lucide-react";
+import { DeliveryNotePrint, DeliveryNoteData } from "@/components/DeliveryNotePrint";
 
 export default function OtpremnicePage() {
   const [deliveryNotes, setDeliveryNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [printingNote, setPrintingNote] = useState<DeliveryNoteData | null>(null);
+
+  const handlePrint = (note: any) => {
+    const printData: DeliveryNoteData = {
+      id: note.id,
+      deliveryNoteNo: note.id.toString(),
+      clientName: note.clientName,
+      siteName: note.siteName || "",
+      recipeName: note.order?.recipe?.name || "Nepoznato",
+      volumeM3: note.volumeM3,
+      orderNumber: note.orderNumber || "",
+      productionNumber: note.productionNumber || "",
+      mixingTime: note.mixingTime || 60,
+      driverName: note.driverName || "",
+      vehiclePlate: note.truckPlate || "",
+      productionStartTime: note.productionStartTime ? new Date(note.productionStartTime).toLocaleString() : new Date(note.deliveredAt).toLocaleString(),
+      productionEndTime: note.productionEndTime ? new Date(note.productionEndTime).toLocaleString() : new Date(note.deliveredAt).toLocaleString(),
+      materialStats: note.materialStats ? JSON.parse(note.materialStats) : undefined,
+    };
+    setPrintingNote(printData);
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
 
   const fetchData = async () => {
     try {
@@ -115,7 +140,10 @@ export default function OtpremnicePage() {
                       <button className="p-1.5 hover:bg-muted rounded text-muted-foreground" title="Pogledaj">
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button className="p-1.5 hover:bg-muted rounded text-muted-foreground" title="Štampaj">
+                      <button 
+                        onClick={() => handlePrint(note)}
+                        className="p-1.5 hover:bg-muted rounded text-muted-foreground" title="Štampaj"
+                      >
                         <Printer className="h-4 w-4" />
                       </button>
                    </div>
@@ -125,6 +153,11 @@ export default function OtpremnicePage() {
           </tbody>
         </table>
       </div>
+      {printingNote && (
+        <div className="hidden print:block absolute inset-0 bg-white z-50">
+          <DeliveryNotePrint data={printingNote} />
+        </div>
+      )}
     </div>
   );
 }
