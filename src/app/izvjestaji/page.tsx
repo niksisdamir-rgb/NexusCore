@@ -17,6 +17,7 @@ import {
   Calendar as CalendarIcon,
   RefreshCw,
   Box,
+  Layers,
   ArrowUpRight,
   Loader2
 } from "lucide-react";
@@ -78,7 +79,7 @@ export default function IzvjestajiPage() {
     if (!reportData) return;
     setExporting(true);
     try {
-      generateProductionPDF(reportData);
+      await generateProductionPDF(reportData);
     } finally {
       setExporting(false);
     }
@@ -354,10 +355,3 @@ function KpiCard({ title, value, description, icon, trend, trendColor = "text-pr
     </Card>
   );
 }
-
-// Minimal Components normally separate
-const Layers = ({ className }: any) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.02a1 1 0 0 0 0 1.83l8.57 3.83a2 2 0 0 0 1.66 0l8.57-3.83a1 1 0 0 0 0-1.83Z"/><path d="m2.6 12.18 8.57 3.83a2 2 0 0 0 1.66 0l8.57-3.83"/><path d="m2.6 17.18 8.57 3.83a2 2 0 0 0 1.66 0l8.57-3.83"/>
-  </svg>
-);

@@ -1,14 +1,9 @@
-import React from "react";
-import { prisma } from "@/lib/db";
 import { verifyReport } from "@/lib/crypto";
 import { 
-  CheckCircle2, 
-  XCircle, 
   ShieldCheck, 
   Factory, 
   Calendar, 
   Box, 
-  Layers,
   ArrowRight,
   ShieldAlert
 } from "lucide-react";
