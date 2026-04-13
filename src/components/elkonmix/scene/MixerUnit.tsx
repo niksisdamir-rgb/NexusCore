@@ -9,19 +9,40 @@ import { PLANT_CONFIG } from "./types";
 interface MixerUnitProps {
   active: boolean;
   onSelect?: () => void;
+  vibration?: number;
+  maintenanceScore?: number;
 }
 
-const MixerUnit = React.memo(function MixerUnit({ active, onSelect }: MixerUnitProps) {
+const MixerUnit = React.memo(function MixerUnit({ 
+  active, 
+  onSelect,
+  vibration = 0,
+  maintenanceScore = 100
+}: MixerUnitProps) {
   // The drum spins on its own local Y axis (corrected from original X)
   const drumRef = useRef<THREE.Mesh>(null);
   const bladesRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
   const { position } = PLANT_CONFIG.mixer;
 
-  useFrame((_, delta) => {
+  useFrame(({ clock }, delta) => {
     const speed = active ? 3.5 : 0.4;
     if (drumRef.current) {
       drumRef.current.rotation.y += delta * speed;
+      
+      // Maintenance Pulse Logic
+      const isFaulty = vibration > 80 || maintenanceScore < 60;
+      if (isFaulty) {
+        const pulse = (Math.sin(clock.elapsedTime * 8) + 1) / 2;
+        drumRef.current.material.emissive = new THREE.Color(pulse, 0, 0);
+        drumRef.current.material.emissiveIntensity = pulse * 2.5;
+      } else if (active) {
+        drumRef.current.material.emissive = new THREE.Color("#1d4ed8");
+        drumRef.current.material.emissiveIntensity = 0.35;
+      } else {
+        drumRef.current.material.emissive = new THREE.Color(0,0,0);
+        drumRef.current.material.emissiveIntensity = 0;
+      }
     }
     if (bladesRef.current) {
       bladesRef.current.rotation.y += delta * speed;
@@ -65,8 +86,6 @@ const MixerUnit = React.memo(function MixerUnit({ active, onSelect }: MixerUnitP
           color={active ? "#3b82f6" : "#6b7280"}
           metalness={0.85}
           roughness={0.15}
-          emissive={active ? "#1d4ed8" : "#000000"}
-          emissiveIntensity={active ? 0.35 : 0}
         />
       </mesh>
 

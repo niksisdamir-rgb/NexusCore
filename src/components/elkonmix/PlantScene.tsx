@@ -6,6 +6,7 @@ import { OrbitControls, Environment, ContactShadows, Sky } from "@react-three/dr
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 import { InventoryItem, PlantOrder, StreamReading, PLANT_CONFIG } from "./scene/types";
+import { useMaintenance } from "@/hooks/useMaintenance";
 import Silos from "./scene/Silos";
 import AggregateBins from "./scene/AggregateBins";
 import Conveyor from "./scene/Conveyor";
@@ -105,11 +106,15 @@ function SceneContent({
   streamReadings,
   hasActiveOrder,
   onSelect,
+  streamData,
+  maintenanceReport,
 }: {
   inventory: InventoryItem[];
   streamReadings: StreamReading[];
   hasActiveOrder: boolean;
   onSelect: (id: string, label: string, level: number) => void;
+  streamData: any;
+  maintenanceReport: any;
 }) {
   const mixerPos = PLANT_CONFIG.mixer.position;
 
@@ -135,7 +140,12 @@ function SceneContent({
         <ScalePlatform active={hasActiveOrder} />
         <WaterTanks streamReadings={streamReadings} onSelect={onSelect} />
         <Conveyor active={hasActiveOrder} />
-        <MixerUnit active={hasActiveOrder} onSelect={() => onSelect("mixer", "MEŠALICA", hasActiveOrder ? 1 : 0)} />
+        <MixerUnit 
+          active={hasActiveOrder} 
+          vibration={streamData?.readings?.find((r: any) => r.sensorType === 'VIBRATION')?.value || 0}
+          maintenanceScore={maintenanceReport?.components.mixer.score || 100}
+          onSelect={() => onSelect("mixer", "MEŠALICA", hasActiveOrder ? 1 : 0)} 
+        />
         <MixerParticles active={hasActiveOrder} position={[mixerPos[0], mixerPos[1] + 0.6, mixerPos[2]]} />
         <Pipes />
         <Scaffolding />
