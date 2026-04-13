@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { telemetryEmitter } from "@/lib/events";
+import { eventBus } from "@/lib/events";
 
 // ─── GET /api/production/[id] ─────────────────────────────────────────────
 export async function GET(
@@ -76,7 +76,7 @@ export async function PATCH(
       });
 
       if (shortages.length > 0) {
-        telemetryEmitter.emitEvent("PRODUCTION_SHORTAGE", { 
+        eventBus.emitEvent("PRODUCTION_SHORTAGE", { 
           orderId: id, 
           shortages: shortages.map(s => s.name) 
         });
@@ -144,7 +144,7 @@ export async function PATCH(
         ] : [])
       ]);
 
-      telemetryEmitter.emitEvent("PRODUCTION_COMPLETED", { 
+      eventBus.emitEvent("PRODUCTION_COMPLETED", { 
         orderId: id, 
         recipe: updatedOrder.recipe.name,
         volume: updatedOrder.quantity 
@@ -164,7 +164,7 @@ export async function PATCH(
     });
 
     if (status === "IN_PROGRESS") {
-      telemetryEmitter.emitEvent("PRODUCTION_STARTED", { 
+      eventBus.emitEvent("PRODUCTION_STARTED", { 
         orderId: id, 
         recipe: updated.recipe.name 
       });
@@ -207,7 +207,7 @@ export async function DELETE(
       include: { recipe: true },
     });
 
-    telemetryEmitter.emitEvent("PRODUCTION_CANCELLED", { 
+    eventBus.emitEvent("PRODUCTION_CANCELLED", { 
       orderId: id, 
       recipe: cancelled.recipe.name 
     });

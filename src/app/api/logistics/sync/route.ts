@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { telemetryEmitter } from "@/lib/events";
+import { eventBus } from "@/lib/events";
 
 // ─── POST /api/logistics/sync ──────────────────────────────────────────
 // Simulates fleet movement and status transitions
@@ -53,7 +53,7 @@ export async function POST() {
       }
 
       if (newStatus !== truck.status) {
-        telemetryEmitter.emitEvent("VEHICLE_STATUS_CHANGE", {
+        eventBus.emitEvent("VEHICLE_STATUS_CHANGE", {
           truckId: truck.id,
           number: truck.number,
           from: truck.status,
@@ -107,7 +107,7 @@ export async function POST() {
             data: { amount: { increment: order.quantity } }
           });
 
-          telemetryEmitter.emitEvent("SILO_REFILLED", {
+          eventBus.emitEvent("SILO_REFILLED", {
             silo: updatedRefill.inventory.material,
             amount: order.quantity
           });

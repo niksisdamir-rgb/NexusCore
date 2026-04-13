@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { telemetryEmitter } from "@/lib/events";
+import { eventBus } from "@/lib/events";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       };
 
       // 2. Subscribe to the global emitter
-      telemetryEmitter.on("telemetry", onTelemetry);
+      eventBus.on("telemetry", onTelemetry);
 
       // 3. Send initial heartbeat/keep-alive
       const heartbeat = `event: ping\ndata: ${JSON.stringify({ status: "connected" })}\n\n`;
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
       // 4. Handle connection close
       req.signal.addEventListener("abort", () => {
-        telemetryEmitter.off("telemetry", onTelemetry);
+        eventBus.off("telemetry", onTelemetry);
         controller.close();
       });
     },
