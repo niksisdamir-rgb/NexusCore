@@ -175,3 +175,122 @@ export const generateShiftSummaryPDF = async (reportData: any) => {
 
   doc.save(`Shift_Summary_${date}.pdf`);
 };
+
+export const generateDeliveryNotePDF = async (note: any) => {
+  const doc = new jsPDF();
+  const date = note.deliveredAt ? new Date(note.deliveredAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0];
+  const noteId = note.id.toString().padStart(5, '0');
+
+  // 1. Generate Verification URL & QR Code
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : "https://nexuscore.azvirt.az";
+  const signature = signReport({ id: note.id, volume: note.volumeM3, client: note.clientName });
+  const verifyUrl = `${baseUrl}/verify?id=${note.id}&v=${note.volumeM3}&s=${signature}&t=otpremnica`;
+  const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, scale: 4 });
+
+  // 2. Header Layer (The Industrial/AzVirt Look)
+  doc.setFillColor(30, 41, 59); // Slate-800
+  doc.rect(0, 0, 210, 50, "F");
+  
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(26);
+  doc.setFont("helvetica", "bold");
+  doc.text("OTPREMNICA BETONA", 15, 25);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text("ELKONMIX-90 | AZVIRT SMART SCADA SYSTEM", 15, 34);
+  
+  // Note ID Badge
+  doc.setFillColor(59, 130, 246); // Blue-500
+  doc.rect(140, 15, 55, 12, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text(`OPT-${noteId}`, 148, 23);
+
+  // 3. Informacije o isporuci (Grid Layout)
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("KUPAC I LOKACIJA:", 15, 65);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Naziv kupca: ${note.clientName}`, 15, 71);
+  doc.text(`Gradilište: ${note.siteName || "Nije navedeno"}`, 15, 76);
+  
+  doc.setFont("helvetica", "bold");
+  doc.text("TRANSPORTNI PODACI:", 110, 65);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Vozilo: ${note.truckPlate || "---"}`, 110, 71);
+  doc.text(`Vozač: ${note.driverName || "---"}`, 110, 76);
+
+  // 4. Tehnološki Podaci
+  doc.line(15, 85, 195, 85);
+  doc.setFont("helvetica", "bold");
+  doc.text("RECEPTURA I KOLIČINA:", 15, 95);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Naziv: ${note.recipeFullName || note.order?.recipe?.name || "Nepoznato"}`, 15, 101);
+  doc.text(`Nalog br: ${note.orderNumber || note.orderId}`, 15, 106);
+  
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text(`ZAPREMINA: ${note.volumeM3} m³`, 110, 101);
+  doc.setFontSize(10);
+
+  // 5. Material Table (Actual vs Target)
+  const stats = note.materialStats ? (typeof note.materialStats === 'string' ? JSON.parse(note.materialStats) : note.materialStats) : null;
+  
+  if (stats) {
+    const tableBody = [
+      ["Cement", `${stats.cement?.target || 0} kg`, `${stats.cement?.actual || 0} kg`, `${stats.cement?.error || 0}%`],
+      ["Voda", `${stats.water?.target || 0} L`, `${stats.water?.actual || 0} L`, `${stats.water?.error || 0}%`],
+      ["Pesak", `${stats.sand?.target || 0} kg`, `${stats.sand?.actual || 0} kg`, `${stats.sand?.error || 0}%`],
+      ["Šljunak", `${stats.gravel?.target || 0} kg`, `${stats.gravel?.actual || 0} kg`, `${stats.gravel?.error || 0}%`],
+      ["Dodaci", `${stats.admixture?.target || 0} kg`, `${stats.admixture?.actual || 0} kg`, `${stats.admixture?.error || 0}%`],
+    ];
+
+    doc.autoTable({
+      startY: 115,
+      head: [["Materijal", "Cilj (Target)", "Ostvareno (Actual)", "Odstupanje"]],
+      body: tableBody,
+      theme: "striped",
+      headStyles: { fillColor: [30, 41, 59] },
+      styles: { fontSize: 9 }
+    });
+  } else {
+    doc.text("NAPOMENA: Detaljni podaci o vaganju nisu dostupni za ovaj nalog.", 15, 120);
+  }
+
+  // 6. Time Registry
+  const finalY = (doc as any).lastAutoTable?.finalY || 130;
+  doc.setFont("helvetica", "bold");
+  doc.text("VREMENSKI REGISTAR:", 15, finalY + 15);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Početak punjenja: ${note.productionStartTime ? new Date(note.productionStartTime).toLocaleTimeString() : "---"}`, 15, finalY + 21);
+  doc.text(`Kraj punjenja: ${note.productionEndTime ? new Date(note.productionEndTime).toLocaleTimeString() : "---"}`, 15, finalY + 26);
+  doc.text(`Vreme mešanja: ${note.mixingTime || 60} s`, 110, finalY + 21);
+
+  // 7. Verification & Signatures
+  doc.line(15, 230, 195, 230);
+  
+  doc.addImage(qrCodeDataUrl, "PNG", 15, 235, 35, 35);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("DIGITALNA VERIFIKACIJA", 55, 245);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  doc.text("Skenirajte za proveru autentičnosti", 55, 250);
+  doc.text(`Sertifikat: ${signature.substring(0, 16)}...`, 55, 255);
+
+  doc.setTextColor(0, 0, 0);
+  doc.text("_______________________", 140, 250);
+  doc.text("Potpis Dispatcher-a", 145, 255);
+  doc.text("_______________________", 140, 275);
+  doc.text("Potpis Vozača", 150, 280);
+
+  // 8. Footer
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  const footerText = "NexusCore SCADA | Generisano automatski | Dokument br: " + noteId;
+  doc.text(footerText, 105, 290, { align: "center" });
+
+  doc.save(`Otpremnica_${noteId}_${note.clientName.replace(/\s+/g, '_')}.pdf`);
+};
