@@ -35,6 +35,7 @@ import {
 } from "recharts";
 import { exportToExcel, generateProductionPDF } from "@/lib/exportUtils";
 import { Badge } from "@/components/ui/badge";
+import BatchDetailsModal from "@/components/BatchDetailsModal";
 
 export default function IzvjestajiPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -42,6 +43,8 @@ export default function IzvjestajiPage() {
   const [trendData, setTrendData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchReport = async () => {
     setLoading(true);
@@ -284,6 +287,7 @@ export default function IzvjestajiPage() {
                   <th className="px-4 py-4 text-right">Količina (m³)</th>
                   <th className="px-6 py-4">Vrijeme Završetka</th>
                   <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-center">Akcije</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -309,11 +313,22 @@ export default function IzvjestajiPage() {
                         ZAVRŠENO
                       </Badge>
                     </td>
+                    <td className="px-6 py-4 text-center">
+                      <button 
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setIsModalOpen(true);
+                        }}
+                        className="bg-primary/10 text-primary px-3 py-1 rounded-md font-bold text-xs hover:bg-primary hover:text-white transition-all border border-primary/20"
+                      >
+                         DETALJI
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {reportData?.details.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-20 text-center">
+                    <td colSpan={6} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Box className="h-10 w-10 opacity-20" />
                         <p className="italic">Nema zabeleženih proizvodnih naloga za ovaj datum.</p>
@@ -326,6 +341,12 @@ export default function IzvjestajiPage() {
           </div>
         </CardContent>
       </Card>
+
+      <BatchDetailsModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        order={selectedOrder}
+      />
     </div>
   );
 }
