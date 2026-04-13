@@ -30,7 +30,12 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { orderId, clientName, truckPlate, volumeM3 } = body;
+    const { 
+      orderId, clientName, truckPlate, volumeM3,
+      siteName, driverName, recipeFullName, orderNumber, 
+      productionNumber, mixingTime, productionStartTime, 
+      productionEndTime, materialStats 
+    } = body;
 
     if (!orderId || !clientName || !truckPlate || volumeM3 === undefined) {
       return NextResponse.json(
@@ -57,6 +62,15 @@ export async function POST(req: Request) {
         clientName,
         truckPlate,
         volumeM3: Number(volumeM3),
+        siteName,
+        driverName,
+        recipeFullName,
+        orderNumber,
+        productionNumber,
+        mixingTime: mixingTime ? Number(mixingTime) : undefined,
+        productionStartTime: productionStartTime ? new Date(productionStartTime) : undefined,
+        productionEndTime: productionEndTime ? new Date(productionEndTime) : undefined,
+        materialStats: materialStats ? JSON.stringify(materialStats) : undefined,
       },
       include: {
         order: { include: { recipe: { select: { id: true, name: true } } } },

@@ -8,9 +8,11 @@ import {
   XCircle, 
   Clock,
   Loader2,
-  Plus
+  Plus,
+  Printer
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { WorkOrderPrint, WorkOrderData } from "@/components/WorkOrderPrint";
 
 export default function ProizvodnjaPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -25,6 +27,28 @@ export default function ProizvodnjaPage() {
     recipeId: "",
     quantity: 1,
   });
+  const [printingOrder, setPrintingOrder] = useState<WorkOrderData | null>(null);
+
+  const handlePrint = (order: any) => {
+    const printData: WorkOrderData = {
+      id: order.id,
+      recipeName: order.recipe?.name || "Nepoznato",
+      quantity: order.quantity,
+      createdAt: order.createdAt,
+      status: order.status,
+      recipeDetails: {
+        cementAmount: order.recipe?.cementAmount || 0,
+        waterAmount: order.recipe?.waterAmount || 0,
+        sandAmount: order.recipe?.sandAmount || 0,
+        gravelAmount: order.recipe?.gravelAmount || 0,
+        admixtureAmount: order.recipe?.admixtureAmount || null,
+      }
+    };
+    setPrintingOrder(printData);
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
 
   const fetchData = async () => {
     try {
@@ -226,6 +250,13 @@ export default function ProizvodnjaPage() {
                         PONIŠTI
                       </button>
                     )}
+                    <button 
+                      onClick={() => handlePrint(order)}
+                      className="bg-muted hover:bg-muted/80 text-muted-foreground px-2 py-1.5 rounded flex items-center shadow-sm"
+                      title="Štampaj Radni Nalog"
+                    >
+                      <Printer className="h-4 w-4" />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -320,6 +351,12 @@ export default function ProizvodnjaPage() {
                Agent koristi Gemini 1.5 Pro za super-precizno mapiranje materijala.
             </div>
           </div>
+        </div>
+      )}
+
+      {printingOrder && (
+        <div className="hidden print:block absolute inset-0 bg-white z-50">
+          <WorkOrderPrint data={printingOrder} />
         </div>
       )}
     </div>
