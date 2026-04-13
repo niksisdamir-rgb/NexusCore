@@ -1,19 +1,21 @@
 # Betonska Baza Hodovo — AzVirt
 
-**Interactive 3D Visualization & SCADA System** for the Elkonmix-90 concrete mixing plant at Betonska Baza Hodovo, AzVirt d.o.o.
+**Interactive 3D Visualization & SCADA System** for the Elkonmix-90 concrete mixing plant at Betonska Baza Hodovo. Powered by the **NexusCore AI Agent Framework**.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
 [![Three.js](https://img.shields.io/badge/Three.js-R3F-orange)](https://threejs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8)](https://tailwindcss.com/)
+[![NexusCore](https://img.shields.io/badge/Powered_by-NexusCore_AI-red)](https://github.com/niksisdamir-rgb/NexusCore)
 
 ## Overview
 
-A comprehensive web application featuring:
-- **3D Interactive Plant Model** — Fully procedural Three.js visualization of the Elkonmix-90 concrete plant with real proportions and technical drawing aesthetics
-- **SCADA Monitoring System** — Real-time plant simulation with 11 functional tabs including production management, delivery notes, recipes, inventory, and operator management
-- **Dashboard** — Key performance indicators, production statistics, and system monitoring
-- **Dual 3D Viewer** — Both dynamic (animated) and static (component-by-component) 3D inspection modes
+Elkonmix-90 is a state-of-the-art concrete plant management system featuring:
+- **3D Interactive Plant Model** — Fully procedural Three.js visualization with real-time telemetry syncing.
+- **NexusCore AI Engine** — Autonomous agents for recipe parsing, document extraction (OCR), and production optimization.
+- **Real-time Telemetry** — SSE-based streaming of sensor data (temperatures, weights, motor speeds).
+- **SCADA Monitoring System** — 11 functional modules for end-to-end plant operations.
+- **Dual 3D Viewer** — Dynamic animation and exploded component inspection modes.
 
 ## Tech Stack
 
@@ -22,9 +24,10 @@ A comprehensive web application featuring:
 | Framework | Next.js 16 (App Router, Turbopack) |
 | Language | TypeScript 5 |
 | 3D Engine | Three.js + React Three Fiber + Drei |
-| Styling | Tailwind CSS 3 + shadcn/ui |
+| Styling | Tailwind CSS 4 + shadcn/ui |
 | State | Zustand + TanStack Query |
-| Database | SQLite via Prisma ORM |
+| Database | SQLite (Dev) / PostgreSQL (Prod) via Prisma |
+| AI Engine | NexusCore (Gemini Pro / Flash) |
 | Icons | Lucide React |
 | Animation | Framer Motion |
 
@@ -57,9 +60,19 @@ A comprehensive web application featuring:
 | Odjava | Logout |
 
 ### Dashboard
-- Production KPIs and statistics
-- Equipment status overview
-- Recent activity feed
+- Production KPIs and statistics with trend analysis
+- Equipment status overview (Motors, Silos, Hoppers)
+- Recent activity feed and real-time alarm logs
+
+## System Architecture
+
+The system follows a modern decoupled architecture:
+1. **Frontend**: Next.js 16 + React Three Fiber for the 3D SCADA interface.
+2. **Real-time Layer**: Global Event Bus (EventEmitter) + Server-Sent Events (SSE).
+3. **AI Layer**: NexusCore agents using Google Gemini for document and recipe extraction.
+4. **Data Layer**: Prisma ORM with automated stock depletion logic.
+
+Refer to [Architecture Documentation](docs/architecture.md) for details.
 
 ## Project Structure
 
@@ -105,27 +118,32 @@ prisma/
 ### Installation
 
 ```bash
-# Clone the repository
+# 1. Clone the repository
 git clone https://github.com/YOUR_USERNAME/betonska-baza-hodovo.git
 cd betonska-baza-hodovo
 
-# Install dependencies
-bun install
+# 2. Install dependencies
+npm install  # or bun install
 
-# Set up database
-bun run db:push
+# 3. Configure environment
+cp .env.example .env.local
+# Edit .env.local and add your GEMINI_API_KEY and NEXTAUTH_SECRET
 
-# Start development server
-bun run dev
+# 4. Set up database
+npx prisma migrate dev --name init
+npx prisma db seed
+
+# 5. Start development server
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Database Seeding
+## Documentation
 
-```bash
-curl -X POST http://localhost:3000/api/scada/seed
-```
+- [Operator User Manual (Bosanski)](docs/MANUAL.md)
+- [System Architecture](docs/architecture.md)
+- [NexusCore Framework](https://github.com/niksisdamir-rgb/NexusCore)
 
 ## Language
 
