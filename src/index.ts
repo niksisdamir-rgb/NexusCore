@@ -10,3 +10,8 @@ export * from './data/extractors/MediaExtractor';
 export * from './data/transformers/TextSplitter';
 export * from './agents/Agent';
 export * from './agents/Tool';
+export * from './llm/embeddings/BaseEmbedding';
+export * from './llm/embeddings/GeminiEmbedding';
+export * from './data/vectorstores/BaseVectorStore';
+export * from './data/vectorstores/MemoryVectorStore';
+export * from './data/vectorstores/ChromaVectorStore';
