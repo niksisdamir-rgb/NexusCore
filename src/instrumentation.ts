@@ -11,7 +11,7 @@ export async function register() {
   // Only run in the Node.js server runtime (not edge, not client)
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { startWorker } = await import("./ai/workers/BackgroundWorker");
-    startWorker(30_000); // 30-second interval
+    startWorker(5000); // 5-second interval for real-time SCADA
     console.log("[Instrumentation] NexusCore BackgroundWorker registered.");
   }
 }
