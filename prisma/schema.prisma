@@ -176,6 +176,8 @@ model Vehicle {
   currentLoad     Float    @default(0)       // m3
   lastLat         Float    @default(0)
   lastLng         Float    @default(0)
+  radarX          Float    @default(0)       // Pixel X for radar UI
+  radarY          Float    @default(0)       // Pixel Y for radar UI
   progress        Float    @default(0)       // 0-100%
   destination     String?
   currentOrderId  String?

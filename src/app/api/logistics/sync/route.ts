@@ -16,11 +16,15 @@ export async function POST() {
       let newStatus = truck.status;
       let newLat = truck.lastLat;
       let newLng = truck.lastLng;
+      let newRadarX = truck.radarX;
+      let newRadarY = truck.radarY;
 
       // Simple radial simulation
       if (truck.status === "TRANSIT") {
         newLat += (Math.random() - 0.4) * 0.001;
         newLng += (Math.random() - 0.5) * 0.001;
+        newRadarX += (Math.random() - 0.2) * 2;
+        newRadarY += (Math.random() - 0.5) * 2;
         if (newProgress >= 100) {
           newProgress = 0;
           newStatus = "DELIVERING";
@@ -39,6 +43,8 @@ export async function POST() {
         // Move back toward plant origin
         newLat -= Math.sign(newLat) * 0.0005;
         newLng -= Math.sign(newLng) * 0.0005;
+        newRadarX -= Math.sign(newRadarX) * 1.5;
+        newRadarY -= Math.sign(newRadarY) * 1.5;
         if (newProgress >= 100) {
           newStatus = "IDLE";
           newProgress = 0;
@@ -52,6 +58,8 @@ export async function POST() {
           status: newStatus,
           lastLat: newLat,
           lastLng: newLng,
+          radarX: newRadarX,
+          radarY: newRadarY,
           lastUpdate: new Date(),
         },
       });
