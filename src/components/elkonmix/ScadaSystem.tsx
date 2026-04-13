@@ -4,7 +4,9 @@ import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
 // Dynamically import the PlantScene so it only renders on client side (R3F)
+// Dynamically import components
 const PlantScene = dynamic(() => import("./PlantScene"), { ssr: false });
+const VoiceAssistant = dynamic(() => import("./VoiceAssistant"), { ssr: false });
 
 export default function ScadaSystem() {
   const [aiText, setAiText] = useState("Recipe Specification:\nName: High Strength C40\nCement: 350 kg\nWater: 180 L\nSand: 800 kg\nGravel: 1100 kg");
@@ -14,6 +16,7 @@ export default function ScadaSystem() {
   const [recipes, setRecipes] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [voiceFeedback, setVoiceFeedback] = useState<string | null>(null);
 
   const fetchData = async () => {
     setDataLoading(true);
@@ -58,6 +61,25 @@ export default function ScadaSystem() {
     } finally {
       setLoading(false);
       fetchData(); // Refresh tables after processing
+    }
+  };
+
+  const handleVoiceAction = (action: any) => {
+    switch (action.intent) {
+      case "QUERY_SENSOR":
+        setVoiceFeedback(`Sensor ${action.target || 'N/A'}: Status Normal`);
+        break;
+      case "MAINTENANCE_STATUS":
+        window.location.href = "/odrzavanje";
+        break;
+      case "CHECK_INVENTORY":
+        window.location.href = "/zalihe";
+        break;
+      case "EMERGENCY_STOP":
+        alert("!!! EMERGENCY STOP TRIGGERED !!!");
+        break;
+      default:
+        console.log("Voice Action:", action);
     }
   };
 
@@ -193,6 +215,16 @@ export default function ScadaSystem() {
           </div>
         </main>
       </div>
+
+      <VoiceAssistant onAction={handleVoiceAction} />
+      
+      {voiceFeedback && (
+        <div className="fixed top-20 right-8 bg-blue-600/90 text-white px-6 py-3 rounded-xl shadow-2xl animate-in fade-in slide-in-from-right-4">
+          <p className="text-xs font-bold uppercase mb-1">AI Odgovor</p>
+          <p className="font-medium">{voiceFeedback}</p>
+          <button onClick={() => setVoiceFeedback(null)} className="absolute -top-1 -right-1 bg-white text-blue-600 rounded-full h-4 w-4 text-[10px] flex items-center justify-center font-bold">X</button>
+        </div>
+      )}
     </div>
   );
 }
