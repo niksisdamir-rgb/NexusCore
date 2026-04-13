@@ -7,6 +7,7 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 import { InventoryItem, PlantOrder, StreamReading, PLANT_CONFIG } from "./scene/types";
 import { useMaintenance } from "@/hooks/useMaintenance";
+import { DiagnosticsReport } from "@/ai/agents/MaintenanceAgent";
 import Silos from "./scene/Silos";
 import AggregateBins from "./scene/AggregateBins";
 import Conveyor from "./scene/Conveyor";
@@ -27,6 +28,7 @@ interface PlantSceneProps {
   activeOrders?: PlantOrder[];
   inventory?: InventoryItem[];
   streamData?: StreamData | null;
+  maintenanceReport?: DiagnosticsReport | null;
 }
 
 // ─── Info Tooltip (HTML overlay) ─────────────────────────────────────────────
@@ -183,6 +185,7 @@ export default function PlantScene({
   activeOrders = [],
   inventory = [],
   streamData = null,
+  maintenanceReport = null,
 }: PlantSceneProps) {
   const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
 
@@ -212,6 +215,8 @@ export default function PlantScene({
           streamReadings={streamReadings}
           hasActiveOrder={hasActiveOrder}
           onSelect={handleSelect}
+          streamData={streamData}
+          maintenanceReport={maintenanceReport}
         />
       </Canvas>
 
