@@ -34,4 +34,4 @@ class TelemetryEmitter extends EventEmitter {
   }
 }
 
-export const telemetryEmitter = TelemetryEmitter.getInstance();
+export const eventBus = TelemetryEmitter.getInstance();
