@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useLogistics, Truck } from "@/hooks/useLogistics";
+import { useLogistics, Truck, TruckStatus } from "@/hooks/useLogistics";
 import { 
   Truck as TruckIcon, 
   Navigation, 

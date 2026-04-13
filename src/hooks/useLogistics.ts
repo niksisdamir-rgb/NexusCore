@@ -34,7 +34,7 @@ export function useLogistics() {
           if (truck.status === "IDLE") return truck;
 
           let newProgress = truck.progress + (Math.random() * 2);
-          let newStatus = truck.status;
+          let newStatus: TruckStatus = truck.status;
           let newLocation = [...truck.location] as [number, number];
 
           // Simple simulation movement
