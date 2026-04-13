@@ -27,34 +27,24 @@ model ProductionOrder {
   quantity     Float
   status       String         @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
   operatorId   Int?
-  operator     User?          @relation(fields: [operatorId], references: [id])
+  operator     Operator?      @relation(fields: [operatorId], references: [id])
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   DeliveryNote DeliveryNote[]
   TelemetryLog TelemetryLog[]
 }
 
-model User {
-  id        Int               @id @default(autoincrement())
-  name      String
-  role      String            @default("OPERATOR") // OPERATOR, MANAGER
-  username  String            @unique
-  password  String            // Hashed
-  shifts    Shift[]
-  orders    ProductionOrder[]
-  createdAt DateTime          @default(now())
-}
-
 model Shift {
   id          Int       @id @default(autoincrement())
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id])
+  operatorId  Int
+  operator    Operator  @relation(fields: [operatorId], references: [id])
   startTime   DateTime  @default(now())
   endTime     DateTime?
   totalVolume Float     @default(0)
   totalOrders Int       @default(0)
+  handoffNote String?
 
-  @@index([userId])
+  @@index([operatorId])
 }
 
 model TelemetryLog {
@@ -84,11 +74,14 @@ model Inventory {
 
 // ─── Operators / Users ─────────────────────────────────────────────────────
 model Operator {
-  id        Int        @id @default(autoincrement())
+  id        Int               @id @default(autoincrement())
   name      String
-  email     String     @unique
+  email     String            @unique
+  username  String            @unique
   password  String
-  role      String     // ADMIN | OPERATOR | VIEWER
+  role      String            @default("OPERATOR") // MANAGER | OPERATOR | VIEWER
+  shifts    Shift[]
+  orders    ProductionOrder[]
   AuditLog  AuditLog[]
 }
 
