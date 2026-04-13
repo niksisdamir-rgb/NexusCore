@@ -1,16 +1,15 @@
 /**
  * src/lib/db.ts
- * Prisma v7 client singleton using better-sqlite3 driver adapter.
+ * Prisma client singleton for production-grade PostgreSQL.
  * Reuses a single instance across hot-reloads in dev mode.
  */
 
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
 function createPrismaClient() {
-  const url = process.env.DATABASE_URL ?? "file:./prisma/dev.db";
-  const adapter = new PrismaBetterSqlite3({ url });
-  return new PrismaClient({ adapter });
+  return new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  });
 }
 
 const globalForPrisma = globalThis as unknown as {
