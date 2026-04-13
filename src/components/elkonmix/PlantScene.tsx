@@ -135,7 +135,14 @@ function SceneContent({
       <pointLight position={[12, 8, -8]} intensity={1.2} color="#fde68a" distance={40} />
 
       <group>
-        <Silos inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
+        <Silos 
+          inventory={inventory} 
+          streamReadings={streamReadings} 
+          onSelect={onSelect} 
+          faultySilos={maintenanceReport?.alerts
+            .filter((a: any) => a.component.includes("Silo"))
+            .map((a: any) => a.id) || []}
+        />
         <AggregateBins inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
         <ScalePlatform active={hasActiveOrder} />
         <WaterTanks streamReadings={streamReadings} onSelect={onSelect} />

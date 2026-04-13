@@ -67,8 +67,21 @@ export class MaintenanceAgent {
       });
     }
 
-    const baseScore = 100 - (alerts.length * 25);
-    return { healthScore: baseScore, alerts };
+    // Silo Check
+    data.readings.filter(r => r.sensorId.startsWith("Silo")).forEach(r => {
+      if (r.value < 5) {
+        alerts.push({
+          id: r.sensorId, // Use sensor ID so 3D scene can match it
+          type: "INFO",
+          component: `Silos ${r.sensorId}`,
+          message: `${r.sensorId} is almost empty!`,
+          timestamp: new Date().toISOString()
+        });
+      }
+    });
+
+    const baseScore = 100 - (alerts.length * 20);
+    return { healthScore: Math.max(0, baseScore), alerts };
   }
 
   private calculateReport(logs: any[]): DiagnosticsReport {
