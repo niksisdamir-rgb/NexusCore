@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Environment, ContactShadows, Sky } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 import { InventoryItem, PlantOrder, StreamReading, PLANT_CONFIG } from "./scene/types";
@@ -145,6 +145,7 @@ function SceneContent({
       <ContactShadows position={[0, 0.01, 0]} opacity={0.5} scale={50} blur={1.5} far={12} />
 
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2 - 0.05} />
+      <Sky distance={45000} sunPosition={[2, 1, -1]} exposure={Math.PI} />
       <Environment preset="night" />
 
       {/* Bloom — glows the mixer emissive material when active */}
