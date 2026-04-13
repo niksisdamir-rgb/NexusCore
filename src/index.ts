@@ -1,2 +1,12 @@
 export { NexusApp } from './core/NexusApp';
 export * from './middleware';
+export * from './llm/BaseModel';
+export * from './llm/providers/GeminiProvider';
+export * from './llm/providers/OllamaProvider';
+export * from './llm/providers/LlamaCppProvider';
+export * from './data/extractors/BaseExtractor';
+export * from './data/extractors/DocumentExtractor';
+export * from './data/extractors/MediaExtractor';
+export * from './data/transformers/TextSplitter';
+export * from './agents/Agent';
+export * from './agents/Tool';
