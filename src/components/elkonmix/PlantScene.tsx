@@ -123,16 +123,14 @@ function SceneContent({
   return (
     <>
       <color attach="background" args={["#030712"]} />
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.6} />
       <spotLight
         position={[20, 30, 10]}
         angle={0.2}
         penumbra={1}
         intensity={2.5}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
       />
-      <directionalLight position={[-10, 10, -5]} intensity={0.6} />
+      <directionalLight position={[-10, 10, -5]} intensity={1.0} />
       {/* Warm area light from side to simulate sunlight */}
       <pointLight position={[12, 8, -8]} intensity={1.2} color="#fde68a" distance={40} />
 
@@ -164,20 +162,12 @@ function SceneContent({
       </group>
 
       <Ground />
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.5} scale={50} blur={1.5} far={12} />
+      {/* ContactShadows removed for ultra-compatibility */}
 
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2 - 0.05} />
-      <Environment preset="night" background />
+      {/* Environment, Sky and other complex shaders removed for hardware compatibility */}
 
-      {/* Bloom — glows the mixer emissive material when active */}
-      <EffectComposer>
-        <Bloom
-          intensity={hasActiveOrder ? 0.8 : 0.15}
-          luminanceThreshold={0.5}
-          luminanceSmoothing={0.9}
-          mipmapBlur
-        />
-      </EffectComposer>
+      {/* EffectComposer and Bloom removed for ultra-compatibility */}
     </>
   );
 }
@@ -208,7 +198,6 @@ export default function PlantScene({
       <style>{`@keyframes fadeInTooltip { from { opacity:0; transform:translateY(-6px);} to { opacity:1; transform:translateY(0);} }`}</style>
 
       <Canvas
-        shadows
         camera={{ position: PLANT_CONFIG.camera.position, fov: PLANT_CONFIG.camera.fov }}
         gl={{ antialias: true }}
       >
