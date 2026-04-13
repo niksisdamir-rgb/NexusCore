@@ -52,9 +52,22 @@ export default function WorkforcePage() {
 
   const handleHandoff = async () => {
     if (!handoffNote) return;
-    // Implementation for handoff submission
-    alert("Handoff note logged for next shift: " + handoffNote);
-    setHandoffNote("");
+    try {
+      const res = await fetch("/api/shifts/handoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: handoffNote })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Napomena uspešno sačuvana za sledeću smenu!");
+        setHandoffNote("");
+        fetchData(); // Refresh to show the note if we had a list
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Greška pri čuvanju napomene.");
+    }
   };
 
   useEffect(() => {

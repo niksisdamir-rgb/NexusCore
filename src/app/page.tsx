@@ -34,26 +34,30 @@ export default function DashboardPage() {
     recipes: any[];
     orders: any[];
     inventory: any[];
+    shift: any;
     loading: boolean;
   }>({
     recipes: [],
     orders: [],
     inventory: [],
+    shift: null,
     loading: true
   });
 
   const fetchData = async () => {
     try {
-      const [resRecipes, resOrders, resInventory] = await Promise.all([
+      const [resRecipes, resOrders, resInventory, resShift] = await Promise.all([
         fetch("/api/recipes").then(r => r.json()),
         fetch("/api/production").then(r => r.json()),
-        fetch("/api/inventory").then(r => r.json())
+        fetch("/api/inventory").then(r => r.json()),
+        fetch("/api/shifts/active").then(r => r.json())
       ]);
 
       setData({
         recipes: resRecipes.recipes || [],
         orders: resOrders.orders || [],
         inventory: resInventory.items || [],
+        shift: resShift,
         loading: false
       });
     } catch (error) {
@@ -106,13 +110,19 @@ export default function DashboardPage() {
         </div>
         <div className="text-right space-y-1">
           <div className="flex justify-end items-center gap-2">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              Smena: {data.shift?.shiftType === 'DAY' ? 'Dnevna' : 'Noćna'} (12h)
+            </span>
+            <span className="h-1 w-1 rounded-full bg-border" />
+            <span className="text-[10px] font-bold text-primary">
+              Operater: {data.shift?.operator?.name || "System"}
+            </span>
+          </div>
+          <div className="flex justify-end items-center gap-2">
             <Activity className={`h-3 w-3 ${streamStatus === 'live' ? 'text-green-500' : 'text-muted-foreground'}`} />
             <span className="text-[10px] uppercase font-bold tracking-wider">
               Telemetrija: {streamStatus === 'live' ? 'UŽIVO' : 'PULSIRANJE'}
             </span>
-          </div>
-          <div className="text-[10px] text-muted-foreground">
-            Osveženo: {new Date().toLocaleTimeString()}
           </div>
         </div>
       </div>
