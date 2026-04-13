@@ -1,212 +1,203 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows, Billboard, Text, Float } from "@react-three/drei";
-import * as THREE from "three";
-import { StreamData } from "@/hooks/useSensorStream";
+import React, { useMemo, useState, useCallback } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
+
+import { InventoryItem, PlantOrder, StreamReading, PLANT_CONFIG } from "./scene/types";
+import Silos from "./scene/Silos";
+import AggregateBins from "./scene/AggregateBins";
+import Conveyor from "./scene/Conveyor";
+import MixerUnit from "./scene/MixerUnit";
+import WaterTanks from "./scene/WaterTanks";
+import Pipes from "./scene/Pipes";
+import MixerParticles from "./scene/MixerParticles";
+import Scaffolding from "./scene/Scaffolding";
+import Ground from "./scene/Ground";
+
+// ─── Typing from types.ts  ────────────────────────────────────────────────────
+export interface StreamData {
+  readings: StreamReading[];
+}
 
 interface PlantSceneProps {
-  activeOrders?: any[];
-  inventory?: any[];
+  activeOrders?: PlantOrder[];
+  inventory?: InventoryItem[];
   streamData?: StreamData | null;
 }
 
-// 0. Floating Label Component for "Premium" 3D look
-function FloatingLabel({ text, position, color = "#ffffff" }: { text: string; position: [number, number, number]; color?: string }) {
+// ─── Info Tooltip (HTML overlay) ─────────────────────────────────────────────
+interface TooltipInfo {
+  id: string;
+  label: string;
+  level: number;
+}
+
+function InfoTooltip({ info, onClose }: { info: TooltipInfo; onClose: () => void }) {
+  const levelColor =
+    info.level > 0.6 ? "#22c55e" : info.level > 0.3 ? "#f59e0b" : "#ef4444";
+
   return (
-    <Billboard position={position}>
-      <Text
-        fontSize={0.5}
-        color={color}
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.05}
-        outlineColor="#000000"
-      >
-        {text}
-      </Text>
-    </Billboard>
+    <div
+      style={{
+        position: "absolute",
+        top: 16,
+        right: 16,
+        background: "rgba(15,23,42,0.92)",
+        border: "1px solid rgba(99,102,241,0.4)",
+        borderRadius: 12,
+        padding: "14px 18px",
+        minWidth: 200,
+        color: "#f1f5f9",
+        fontFamily: "monospace",
+        fontSize: 13,
+        backdropFilter: "blur(12px)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        zIndex: 10,
+        animation: "fadeInTooltip 0.18s ease",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <span style={{ fontWeight: 700, fontSize: 15, color: "#e2e8f0" }}>{info.label}</span>
+        <button
+          onClick={onClose}
+          style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 18, lineHeight: 1 }}
+        >
+          ×
+        </button>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div
+          style={{
+            flex: 1,
+            height: 10,
+            background: "#1e293b",
+            borderRadius: 5,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              width: `${(info.level * 100).toFixed(0)}%`,
+              height: "100%",
+              background: levelColor,
+              borderRadius: 5,
+              transition: "width 0.4s ease",
+            }}
+          />
+        </div>
+        <span style={{ color: levelColor, fontWeight: 700, minWidth: 38 }}>
+          {(info.level * 100).toFixed(0)}%
+        </span>
+      </div>
+      <div style={{ marginTop: 8, color: "#64748b", fontSize: 11 }}>
+        Sensor ID: {info.id}
+      </div>
+    </div>
   );
 }
 
-// 1. Silos for Cement
-function Silos({ inventory = [], streamReadings = [] }: { inventory: any[], streamReadings: any[] }) {
-  // Utility to get value from either stream (priority) or static inventory
-  const getLevel = (sensorId: string, fallbackName: string) => {
-    const stream = streamReadings.find(r => r.sensorId === sensorId);
-    if (stream) return stream.value / 100; // SSE is 0-100%
-
-    const inv = inventory.find(i => i.name.includes(fallbackName));
-    return inv ? inv.amount / inv.capacity : 0.5;
-  };
-
-  const cement1Level = getLevel("cement_silo_1", "Cement");
-  const cement2Level = getLevel("cement_silo_2", "Cement"); // If exists
-
-  return (
-    <group position={[-5, 4, -3]}>
-      {/* Silo 1 */}
-      <group position={[0, 0, 0]}>
-         <FloatingLabel text="Cement S1" position={[0, 5, 0]} />
-         <mesh castShadow>
-          <cylinderGeometry args={[1.5, 1.5, 8, 32]} />
-          <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} transparent opacity={0.3} />
-        </mesh>
-        {/* Fill Level */}
-        <mesh position={[0, -4 + (8 * cement1Level) / 2, 0]}>
-           <cylinderGeometry args={[1.45, 1.45, 8 * cement1Level, 32]} />
-           <meshStandardMaterial color="#fcd34d" metalness={0.8} roughness={0.2} />
-        </mesh>
-      </group>
-
-      {/* Silo 2 */}
-      <group position={[3.5, 0, 0]}>
-        <FloatingLabel text="Cement S2" position={[0, 5, 0]} />
-        <mesh castShadow>
-          <cylinderGeometry args={[1.5, 1.5, 8, 32]} />
-          <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} transparent opacity={0.3} />
-        </mesh>
-        {/* Fill Level */}
-        <mesh position={[0, -4 + (8 * cement2Level) / 2, 0]}>
-           <cylinderGeometry args={[1.45, 1.45, 8 * cement2Level, 32]} />
-           <meshStandardMaterial color="#fcd34d" metalness={0.8} roughness={0.2} />
-        </mesh>
-      </group>
-    </group>
-  );
-}
-
-// 2. Aggregates Bins (Sand, Gravel)
-function AggregateBins({ inventory = [], streamReadings = [] }: { inventory: any[], streamReadings: any[] }) {
-  const getLevel = (sensorId: string, searchName: string) => {
-    const stream = streamReadings.find(r => r.sensorId === sensorId);
-    if (stream) return stream.value / 100;
-
-    const inv = inventory.find(i => i.name.includes(searchName));
-    return inv ? inv.amount / inv.capacity : 0.5;
-  };
-
-  const sensorMap = ["sand_bin_1", "gravel_bin_1", "sand_bin_2", "gravel_bin_2"];
-  const nameMap = ["Pesak", "Šljunak", "Pesak", "Šljunak"];
+// ─── 3D Scene content (separate so Canvas can wrap it) ────────────────────────
+function SceneContent({
+  inventory,
+  streamReadings,
+  hasActiveOrder,
+  onSelect,
+}: {
+  inventory: InventoryItem[];
+  streamReadings: StreamReading[];
+  hasActiveOrder: boolean;
+  onSelect: (id: string, label: string, level: number) => void;
+}) {
+  const mixerPos = PLANT_CONFIG.mixer.position;
 
   return (
-    <group position={[6, 2, 0]}>
-      {[0, 1, 2, 3].map((i) => {
-        const fillScale = getLevel(sensorMap[i], nameMap[i]);
-        
-        return (
-          <group key={i} position={[0, 0, i * -2.5 + 3.75]}>
-            <FloatingLabel text={nameMap[i] + ` ${Math.floor(i/2) + 1}`} position={[0, 4, 0]} />
-            {/* Bin structure/glass */}
-            <mesh position={[0, 1.5, 0]} castShadow>
-              <boxGeometry args={[3, 3, 2.3]} />
-              <meshStandardMaterial color="#fb923c" metalness={0.1} roughness={1} transparent opacity={0.2} />
-            </mesh>
-            {/* Material Fill */}
-            <mesh position={[0, 0 + (3 * fillScale) / 2, 0]}>
-               <boxGeometry args={[2.8, 3 * fillScale, 2.1]} />
-               <meshStandardMaterial color={i % 2 === 0 ? "#78350f" : "#451a03"} />
-            </mesh>
-          </group>
-        );
-      })}
-    </group>
-  );
-}
-
-// 3. Conveyor Belt
-function Conveyor({ active }: { active: boolean }) {
-  const beltRef = useRef<THREE.Mesh>(null);
-  
-  useFrame((state, delta) => {
-    if (active && beltRef.current) {
-      beltRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 10) * 0.02;
-    }
-  });
-
-  return (
-    <group position={[2.5, 2.5, 0]} rotation={[0, 0, Math.PI / 6]}>
-      <mesh ref={beltRef} castShadow position={[0, 0.5, 0]}>
-        <boxGeometry args={[8, 0.2, 1.4]} />
-        <meshStandardMaterial color={active ? "#10b981" : "#374151"} metalness={0.2} roughness={0.8} />
-      </mesh>
-      <mesh castShadow>
-        <boxGeometry args={[8, 0.4, 1.5]} />
-        <meshStandardMaterial color="#1f2937" />
-      </mesh>
-    </group>
-  );
-}
-
-// 4. Main Mixer Unit
-function MixerUnit({ active }: { active: boolean }) {
-  const mixerRef = useRef<THREE.Mesh>(null);
-  
-  useFrame((state, delta) => {
-    if (mixerRef.current) {
-      const speed = active ? 4.0 : 1.0; 
-      mixerRef.current.rotation.x += delta * speed;
-    }
-  });
-
-  return (
-    <group position={[-1, 3, 0]}>
-      <FloatingLabel text="MEŠALICA" position={[0, 3, 0]} color={active ? "#3b82f6" : "#ffffff"} />
-      {/* Structural Base */}
-      <mesh position={[0, -2, 0]} castShadow>
-        <boxGeometry args={[3, 4, 3]} />
-        <meshStandardMaterial color="#3b82f6" metalness={0.3} roughness={0.7} />
-      </mesh>
-      
-      {/* Mixing Drum */}
-      <mesh ref={mixerRef} position={[0, 0.5, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <cylinderGeometry args={[1.2, 1.2, 2.5, 16]} />
-        <meshStandardMaterial color={active ? "#60a5fa" : "#9ca3af"} metalness={active ? 0.9 : 0.4} roughness={0.2} emissive={active ? "#1d4ed8" : "#000000"} emissiveIntensity={0.2} />
-      </mesh>
-    </group>
-  );
-}
-
-function Ground() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-      <planeGeometry args={[50, 50]} />
-      <meshStandardMaterial color="#111827" roughness={1} />
-    </mesh>
-  );
-}
-
-export default function PlantScene({ activeOrders = [], inventory = [], streamData = null }: PlantSceneProps) {
-  const hasActiveOrder = useMemo(() => {
-    return activeOrders.some(order => order.status === 'IN_PROGRESS');
-  }, [activeOrders]);
-
-  const streamReadings = streamData?.readings || [];
-
-  return (
-    <Canvas shadows camera={{ position: [15, 12, 18], fov: 40 }}>
+    <>
       <color attach="background" args={["#030712"]} />
-      <ambientLight intensity={0.5} />
-      <spotLight position={[20, 30, 10]} angle={0.15} penumbra={1} intensity={2} castShadow />
-      <directionalLight position={[-10, 10, -5]} intensity={0.5} />
-      
-      {hasActiveOrder && (
-        <pointLight position={[-1, 3, 0]} intensity={5.0} color="#3b82f6" distance={15} />
-      )}
-      
-      <group position={[0, 0, 0]}>
-        <Silos inventory={inventory} streamReadings={streamReadings} />
-        <AggregateBins inventory={inventory} streamReadings={streamReadings} />
+      <ambientLight intensity={0.4} />
+      <spotLight
+        position={[20, 30, 10]}
+        angle={0.2}
+        penumbra={1}
+        intensity={2.5}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+      />
+      <directionalLight position={[-10, 10, -5]} intensity={0.6} />
+      {/* Warm area light from side to simulate sunlight */}
+      <pointLight position={[12, 8, -8]} intensity={1.2} color="#fde68a" distance={40} />
+
+      <group>
+        <Silos inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
+        <AggregateBins inventory={inventory} streamReadings={streamReadings} onSelect={onSelect} />
+        <WaterTanks streamReadings={streamReadings} onSelect={onSelect} />
         <Conveyor active={hasActiveOrder} />
-        <MixerUnit active={hasActiveOrder} />
+        <MixerUnit active={hasActiveOrder} onSelect={() => onSelect("mixer", "MEŠALICA", hasActiveOrder ? 1 : 0)} />
+        <MixerParticles active={hasActiveOrder} position={[mixerPos[0], mixerPos[1] + 0.6, mixerPos[2]]} />
+        <Pipes />
+        <Scaffolding />
       </group>
-      
+
       <Ground />
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.6} scale={40} blur={1} far={10} />
-      
+      <ContactShadows position={[0, 0.01, 0]} opacity={0.5} scale={50} blur={1.5} far={12} />
+
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2 - 0.05} />
       <Environment preset="night" />
-    </Canvas>
+
+      {/* Bloom — glows the mixer emissive material when active */}
+      <EffectComposer>
+        <Bloom
+          intensity={hasActiveOrder ? 0.8 : 0.15}
+          luminanceThreshold={0.5}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+        />
+      </EffectComposer>
+    </>
+  );
+}
+
+// ─── Main export ──────────────────────────────────────────────────────────────
+export default function PlantScene({
+  activeOrders = [],
+  inventory = [],
+  streamData = null,
+}: PlantSceneProps) {
+  const [tooltip, setTooltip] = useState<TooltipInfo | null>(null);
+
+  const hasActiveOrder = useMemo(
+    () => activeOrders.some((o) => o.status === "IN_PROGRESS"),
+    [activeOrders]
+  );
+
+  const streamReadings = streamData?.readings ?? [];
+
+  const handleSelect = useCallback((id: string, label: string, level: number) => {
+    setTooltip({ id, label, level });
+  }, []);
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      {/* Inject keyframe for tooltip fade-in */}
+      <style>{`@keyframes fadeInTooltip { from { opacity:0; transform:translateY(-6px);} to { opacity:1; transform:translateY(0);} }`}</style>
+
+      <Canvas
+        shadows
+        camera={{ position: PLANT_CONFIG.camera.position, fov: PLANT_CONFIG.camera.fov }}
+        gl={{ antialias: true }}
+      >
+        <SceneContent
+          inventory={inventory}
+          streamReadings={streamReadings}
+          hasActiveOrder={hasActiveOrder}
+          onSelect={handleSelect}
+        />
+      </Canvas>
+
+      {tooltip && (
+        <InfoTooltip info={tooltip} onClose={() => setTooltip(null)} />
+      )}
+    </div>
   );
 }

@@ -35,7 +35,6 @@ function SingleSilo({
       onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
       onPointerOut={() => setHovered(false)}
       onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
-      style={{ cursor: "pointer" } as any}
     >
       {/* Hover glow ring */}
       {hovered && (
