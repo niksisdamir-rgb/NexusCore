@@ -5,12 +5,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "next build",
     "test": "jest",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "dev": "ts-node examples/basic-api/index.ts",
-    "prepare": "npm run build"
+    "dev": "next dev",
+    "prepare": "npm run build",
+    "start": "next start"
   },
   "keywords": [
     "framework",
@@ -40,4 +41,3 @@
     "xlsx": "^0.18.5"
   }
 }
-
