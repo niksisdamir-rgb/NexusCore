@@ -29,16 +29,20 @@ import {
 
 export default function WorkforcePage() {
   const [analysis, setAnalysis] = useState<any>(null);
+  const [activeShift, setActiveShift] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [handoffNote, setHandoffNote] = useState("");
 
-  const fetchAnalysis = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/ai/workforce");
-      const data = await res.json();
-      if (data.success) {
-        setAnalysis(data.analysis);
-      }
+      const [resWorkforce, resShift] = await Promise.all([
+        fetch("/api/ai/workforce").then(r => r.json()),
+        fetch("/api/shifts/active").then(r => r.json())
+      ]);
+      
+      if (resWorkforce.success) setAnalysis(resWorkforce.analysis);
+      if (resShift.success) setActiveShift(resShift);
     } catch (e) {
       console.error(e);
     } finally {
@@ -46,8 +50,15 @@ export default function WorkforcePage() {
     }
   };
 
+  const handleHandoff = async () => {
+    if (!handoffNote) return;
+    // Implementation for handoff submission
+    alert("Handoff note logged for next shift: " + handoffNote);
+    setHandoffNote("");
+  };
+
   useEffect(() => {
-    fetchAnalysis();
+    fetchData();
   }, []);
 
   if (loading && !analysis) {
@@ -190,25 +201,49 @@ export default function WorkforcePage() {
           </div>
 
           {/* Active Shift Card */}
-          <div className="bg-card border border-border rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-xl">
+          <div className="bg-card border border-border rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full -mr-16 -mt-16" />
+             
              <div className="h-24 w-24 rounded-full border-4 border-green-500/20 p-2 flex items-center justify-center relative">
                 <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin" />
                 <UserCheck className="h-10 w-10 text-green-500" />
              </div>
-             <div className="flex-1 text-center md:text-left">
+             <div className="flex-1 text-center md:text-left z-10">
                <div className="flex items-center justify-center md:justify-start gap-2 mb-1">
-                 <h4 className="text-2xl font-black">Aktivna Smena: Prva (06-14h)</h4>
-                 <Badge className="bg-green-500">LIVE</Badge>
+                 <h4 className="text-2xl font-black">
+                   Aktivna Smena: {activeShift?.shiftType === 'DAY' ? 'DNEVNA' : 'NOĆNA'} (12h)
+                 </h4>
+                 <Badge className="bg-green-500 shadow-lg shadow-green-500/20 animate-pulse">UŽIVO</Badge>
                </div>
                <p className="text-muted-foreground text-sm max-w-xl">
-                 Trenutno prijavljen operater: **Marko Petrović**. Ukupan učinak u smeni: 24.5 m³ (Prevazilazi cilj za 2.1 m³). 
-                 Sve sistemske funkcije su u optimalnom režimu.
+                 Odgovorni operater: <span className="text-foreground font-bold">{activeShift?.operator?.name || "NIKO PRIJAVLJEN"}</span>. 
+                 Smena završava u {activeShift?.shiftType === 'DAY' ? '19:00' : '07:00'}.
                </p>
+               
+               {/* Handoff Input */}
+               <div className="mt-4 flex gap-2">
+                 <input 
+                   value={handoffNote}
+                   onChange={(e) => setHandoffNote(e.target.value)}
+                   placeholder="Zapiši napomenu za sledeću smenu (primopredaja)..." 
+                   className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-sm focus:ring-2 ring-primary/20 outline-none"
+                 />
+                 <button 
+                   onClick={handleHandoff}
+                   className="bg-muted hover:bg-muted/80 text-foreground px-4 py-2 rounded-lg text-xs font-bold uppercase transition-all"
+                 >
+                   Zapiši
+                 </button>
+               </div>
              </div>
-             <button className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold hover:scale-105 transition-all shadow-lg active:scale-95 flex items-center gap-2">
-               ZAVRŠI SMENU <ChevronRight className="h-4 w-4" />
-             </button>
+             <div className="flex flex-col gap-2">
+                <button className="bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold hover:scale-105 transition-all shadow-lg active:scale-95 flex items-center gap-2">
+                  PRIMOPREDAJA <ChevronRight className="h-4 w-4" />
+                </button>
+                <span className="text-[10px] text-center text-muted-foreground uppercase font-bold tracking-tighter italic">Sledeća smena: {activeShift?.shiftType === 'DAY' ? 'NOĆNA' : 'DNEVNA'}</span>
+             </div>
           </div>
+
         </div>
 
       </div>
