@@ -32,16 +32,18 @@ const MixerUnit = React.memo(function MixerUnit({
       
       // Maintenance Pulse Logic
       const isFaulty = vibration > 80 || maintenanceScore < 60;
+      const mat = drumRef.current.material as THREE.MeshStandardMaterial;
+
       if (isFaulty) {
         const pulse = (Math.sin(clock.elapsedTime * 8) + 1) / 2;
-        drumRef.current.material.emissive = new THREE.Color(pulse, 0, 0);
-        drumRef.current.material.emissiveIntensity = pulse * 2.5;
+        mat.emissive = new THREE.Color(pulse, 0, 0);
+        mat.emissiveIntensity = pulse * 2.5;
       } else if (active) {
-        drumRef.current.material.emissive = new THREE.Color("#1d4ed8");
-        drumRef.current.material.emissiveIntensity = 0.35;
+        mat.emissive = new THREE.Color("#1d4ed8");
+        mat.emissiveIntensity = 0.35;
       } else {
-        drumRef.current.material.emissive = new THREE.Color(0,0,0);
-        drumRef.current.material.emissiveIntensity = 0;
+        mat.emissive = new THREE.Color(0,0,0);
+        mat.emissiveIntensity = 0;
       }
     }
     if (bladesRef.current) {
