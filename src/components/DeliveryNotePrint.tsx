@@ -29,10 +29,10 @@ export function DeliveryNotePrint({ data, forwardRef }: { data: DeliveryNoteData
   ];
 
   const defaultStats = {
-    required: materials.reduce((acc, m) => ({ ...acc, [m]: 0 }), {}),
-    given: materials.reduce((acc, m) => ({ ...acc, [m]: 0 }), {}),
-    difference: materials.reduce((acc, m) => ({ ...acc, [m]: 0 }), {}),
-    percentage: materials.reduce((acc, m) => ({ ...acc, [m]: 0 }), {})
+    required: materials.reduce<Record<string, number>>((acc, m) => ({ ...acc, [m]: 0 }), {}),
+    given: materials.reduce<Record<string, number>>((acc, m) => ({ ...acc, [m]: 0 }), {}),
+    difference: materials.reduce<Record<string, number>>((acc, m) => ({ ...acc, [m]: 0 }), {}),
+    percentage: materials.reduce<Record<string, number>>((acc, m) => ({ ...acc, [m]: 0 }), {})
   };
 
   const stats = data.materialStats || defaultStats;

@@ -25,7 +25,12 @@ const PlantScene = dynamic(() => import("@/components/elkonmix/PlantScene"), { s
 
 export default function DashboardPage() {
   const { data: streamData, status: streamStatus } = useSensorStream();
-  const [data, setData] = useState({
+  const [data, setData] = useState<{
+    recipes: any[];
+    orders: any[];
+    inventory: any[];
+    loading: boolean;
+  }>({
     recipes: [],
     orders: [],
     inventory: [],
