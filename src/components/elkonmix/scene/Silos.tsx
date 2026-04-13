@@ -2,6 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
 import { Detailed } from "@react-three/drei";
 import FloatingLabel from "./FloatingLabel";
 import { PLANT_CONFIG, InventoryItem, StreamReading, levelToColor } from "./types";
@@ -19,6 +20,7 @@ function SingleSilo({
   label,
   position,
   onSelect,
+  isFaulty,
 }: {
   index: number;
   level: number;
