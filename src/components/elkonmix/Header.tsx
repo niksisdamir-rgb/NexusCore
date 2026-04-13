@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Circle, Database, Activity, RefreshCcw, LogOut, User } from "lucide-react";
 import { useSensorStream } from "@/hooks/useSensorStream";
 import { useSession, signOut } from "next-auth/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export function Header() {
   const { data: session } = useSession();
@@ -32,6 +34,7 @@ export function Header() {
 
   const isLive = streamStatus === "live";
   const isConnecting = streamStatus === "connecting";
+  const pathname = usePathname();
 
   return (
     <header className="h-16 glass px-6 flex items-center justify-between sticky top-0 z-[50]">
@@ -52,6 +55,27 @@ export function Header() {
             {isLive ? "UŽIVO" : isConnecting ? "POVEZIVANJE..." : "OFFLINE"}
           </Badge>
         </div>
+
+        {/* Navigation */}
+        <nav className="ml-8 flex items-center gap-1 bg-muted/50 p-1 rounded-xl border border-border/50">
+          <Link 
+            href="/" 
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              pathname === "/" ? "bg-background text-primary shadow-sm" : "hover:text-foreground"
+            }`}
+          >
+            KOMANDNA TABLA
+          </Link>
+          <Link 
+            href="/insights" 
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              pathname === "/insights" ? "bg-background text-primary shadow-sm" : "hover:text-foreground"
+            }`}
+          >
+            UVIDI I ODRŽAVANJE
+            <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+          </Link>
+        </nav>
       </div>
 
       <div className="flex items-center gap-6 text-sm text-muted-foreground">

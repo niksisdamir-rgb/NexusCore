@@ -1,4 +1,4 @@
-import { NexusApp } from '../src/index';
+import { NexusApp } from '../../src/index';
 
 const app = new NexusApp({
   name: 'Basic API Example',
