@@ -2,61 +2,102 @@
 
 import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Environment, ContactShadows } from "@react-three/drei";
+import { OrbitControls, Environment, ContactShadows, Billboard, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
 
 interface PlantSceneProps {
   activeOrders?: any[];
+  inventory?: any[];
 }
 
+// 0. Floating Label Component for "Premium" 3D look
+function FloatingLabel({ text, position, color = "#ffffff" }: { text: string; position: [number, number, number]; color?: string }) {
+  return (
+    <Billboard position={position}>
+      <Text
+        fontSize={0.5}
+        color={color}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.05}
+        outlineColor="#000000"
+      >
+        {text}
+      </Text>
+    </Billboard>
+  );
+}
 
 // 1. Silos for Cement
-function Silos() {
+function Silos({ inventory = [] }: { inventory: any[] }) {
+  // Find cement inventory levels
+  const cement1 = inventory.find(i => i.name.includes("Cement") && i.id % 2 === 0);
+  const cement2 = inventory.find(i => i.name.includes("Cement") && i.id % 2 !== 0);
+
+  const getFillScale = (item: any) => {
+    if (!item) return 0.5; // default 50%
+    return Math.max(0.1, item.amount / item.capacity);
+  };
+
   return (
     <group position={[-5, 4, -3]}>
       {/* Silo 1 */}
-      <mesh position={[0, 0, 0]} castShadow>
-        <cylinderGeometry args={[1.5, 1.5, 8, 32]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} />
-      </mesh>
-      {/* Silo 1 Cone Bottom */}
-      <mesh position={[0, -5, 0]} rotation={[Math.PI, 0, 0]} castShadow>
-        <coneGeometry args={[1.5, 2, 32]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} />
-      </mesh>
+      <group position={[0, 0, 0]}>
+         <FloatingLabel text="Cement S1" position={[0, 5, 0]} />
+         <mesh castShadow>
+          <cylinderGeometry args={[1.5, 1.5, 8, 32]} />
+          <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} transparent opacity={0.3} />
+        </mesh>
+        {/* Fill Level */}
+        <mesh position={[0, -4 + (8 * getFillScale(cement1)) / 2, 0]}>
+           <cylinderGeometry args={[1.45, 1.45, 8 * getFillScale(cement1), 32]} />
+           <meshStandardMaterial color="#fcd34d" metalness={0.8} roughness={0.2} />
+        </mesh>
+      </group>
 
       {/* Silo 2 */}
-      <mesh position={[3.5, 0, 0]} castShadow>
-        <cylinderGeometry args={[1.5, 1.5, 8, 32]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} />
-      </mesh>
-      {/* Silo 2 Cone Bottom */}
-      <mesh position={[3.5, -5, 0]} rotation={[Math.PI, 0, 0]} castShadow>
-        <coneGeometry args={[1.5, 2, 32]} />
-        <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} />
-      </mesh>
+      <group position={[3.5, 0, 0]}>
+        <FloatingLabel text="Cement S2" position={[0, 5, 0]} />
+        <mesh castShadow>
+          <cylinderGeometry args={[1.5, 1.5, 8, 32]} />
+          <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} transparent opacity={0.3} />
+        </mesh>
+        {/* Fill Level */}
+        <mesh position={[0, -4 + (8 * getFillScale(cement2)) / 2, 0]}>
+           <cylinderGeometry args={[1.45, 1.45, 8 * getFillScale(cement2), 32]} />
+           <meshStandardMaterial color="#fcd34d" metalness={0.8} roughness={0.2} />
+        </mesh>
+      </group>
     </group>
   );
 }
 
 // 2. Aggregates Bins (Sand, Gravel)
-function AggregateBins() {
+function AggregateBins({ inventory = [] }: { inventory: any[] }) {
+  const aggregateItems = inventory.filter(i => i.name.includes("Pesak") || i.name.includes("Šljunak"));
+
   return (
     <group position={[6, 2, 0]}>
-      {[0, 1, 2, 3].map((i) => (
-        <group key={i} position={[0, 0, i * -2.5 + 3.75]}>
-          {/* Bin top */}
-          <mesh position={[0, 1.5, 0]} castShadow>
-            <boxGeometry args={[3, 3, 2.3]} />
-            <meshStandardMaterial color="#fb923c" metalness={0.2} roughness={0.8} />
-          </mesh>
-          {/* Hopper bottom */}
-          <mesh position={[0, -0.75, 0]} rotation={[Math.PI, Math.PI / 4, 0]} castShadow>
-            <coneGeometry args={[1.5, 1.5, 4]} />
-            <meshStandardMaterial color="#ea580c" metalness={0.2} roughness={0.8} />
-          </mesh>
-        </group>
-      ))}
+      {[0, 1, 2, 3].map((i) => {
+        const item = aggregateItems[i];
+        const fillScale = item ? Math.max(0.1, item.amount / item.capacity) : 0.5;
+        
+        return (
+          <group key={i} position={[0, 0, i * -2.5 + 3.75]}>
+            <FloatingLabel text={item?.name || `Bin ${i+1}`} position={[0, 4, 0]} />
+            {/* Bin structure/glass */}
+            <mesh position={[0, 1.5, 0]} castShadow>
+              <boxGeometry args={[3, 3, 2.3]} />
+              <meshStandardMaterial color="#fb923c" metalness={0.1} roughness={1} transparent opacity={0.2} />
+            </mesh>
+            {/* Material Fill */}
+            <mesh position={[0, 0 + (3 * fillScale) / 2, 0]}>
+               <boxGeometry args={[2.8, 3 * fillScale, 2.1]} />
+               <meshStandardMaterial color={i % 2 === 0 ? "#78350f" : "#451a03"} />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -67,7 +108,6 @@ function Conveyor({ active }: { active: boolean }) {
   
   useFrame((state, delta) => {
     if (active && beltRef.current) {
-      // Simulate moving belt by animating texture or just bobbing it slightly for effect
       beltRef.current.position.y = 0.5 + Math.sin(state.clock.elapsedTime * 10) * 0.02;
     }
   });
@@ -78,7 +118,6 @@ function Conveyor({ active }: { active: boolean }) {
         <boxGeometry args={[8, 0.2, 1.4]} />
         <meshStandardMaterial color={active ? "#10b981" : "#374151"} metalness={0.2} roughness={0.8} />
       </mesh>
-      {/* Conveyor Base */}
       <mesh castShadow>
         <boxGeometry args={[8, 0.4, 1.5]} />
         <meshStandardMaterial color="#1f2937" />
@@ -91,17 +130,17 @@ function Conveyor({ active }: { active: boolean }) {
 function MixerUnit({ active }: { active: boolean }) {
   const mixerRef = useRef<THREE.Mesh>(null);
   
-  // Rotating central drum
   useFrame((state, delta) => {
     if (mixerRef.current) {
-      const speed = active ? 4.0 : 1.0; // rotate faster if active
+      const speed = active ? 4.0 : 1.0; 
       mixerRef.current.rotation.x += delta * speed;
     }
   });
 
   return (
     <group position={[-1, 3, 0]}>
-      {/* Structur Base */}
+      <FloatingLabel text="MEŠALICA" position={[0, 3, 0]} color={active ? "#3b82f6" : "#ffffff"} />
+      {/* Structural Base */}
       <mesh position={[0, -2, 0]} castShadow>
         <boxGeometry args={[3, 4, 3]} />
         <meshStandardMaterial color="#3b82f6" metalness={0.3} roughness={0.7} />
@@ -112,55 +151,47 @@ function MixerUnit({ active }: { active: boolean }) {
         <cylinderGeometry args={[1.2, 1.2, 2.5, 16]} />
         <meshStandardMaterial color={active ? "#60a5fa" : "#9ca3af"} metalness={active ? 0.9 : 0.4} roughness={0.2} emissive={active ? "#1d4ed8" : "#000000"} emissiveIntensity={0.2} />
       </mesh>
-      
-      {/* Top Cover */}
-      <mesh position={[0, 2, 0]} castShadow>
-        <boxGeometry args={[3.2, 1, 3.2]} />
-        <meshStandardMaterial color="#2563eb" metalness={0.3} roughness={0.7} />
-      </mesh>
     </group>
   );
 }
 
-// Ground and Environment
 function Ground() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
       <planeGeometry args={[50, 50]} />
-      <meshStandardMaterial color="#d1d5db" roughness={1} />
+      <meshStandardMaterial color="#111827" roughness={1} />
     </mesh>
   );
 }
 
-export default function PlantScene({ activeOrders = [] }: PlantSceneProps) {
-  // Check if any order is currently IN_PROGRESS
+export default function PlantScene({ activeOrders = [], inventory = [] }: PlantSceneProps) {
   const hasActiveOrder = useMemo(() => {
     return activeOrders.some(order => order.status === 'IN_PROGRESS');
   }, [activeOrders]);
 
   return (
-    <Canvas shadows camera={{ position: [12, 10, 15], fov: 45 }}>
-      <color attach="background" args={["#f3f4f6"]} />
-      <ambientLight intensity={hasActiveOrder ? 0.6 : 0.4} />
-      <directionalLight position={[10, 20, 10]} intensity={1.2} castShadow shadow-mapSize={[1024, 1024]} />
+    <Canvas shadows camera={{ position: [15, 12, 18], fov: 40 }}>
+      <color attach="background" args={["#030712"]} />
+      <ambientLight intensity={0.5} />
+      <spotLight position={[20, 30, 10]} angle={0.15} penumbra={1} intensity={2} castShadow />
+      <directionalLight position={[-10, 10, -5]} intensity={0.5} />
       
-      {/* If active, add a glowing light from the mixer */}
       {hasActiveOrder && (
-        <pointLight position={[-1, 3, 0]} intensity={2.0} color="#3b82f6" distance={10} />
+        <pointLight position={[-1, 3, 0]} intensity={5.0} color="#3b82f6" distance={15} />
       )}
       
       <group position={[0, 0, 0]}>
-        <Silos />
-        <AggregateBins />
+        <Silos inventory={inventory} />
+        <AggregateBins inventory={inventory} />
         <Conveyor active={hasActiveOrder} />
         <MixerUnit active={hasActiveOrder} />
       </group>
       
       <Ground />
-      <ContactShadows position={[0, 0.01, 0]} opacity={0.4} scale={20} blur={2} far={10} />
+      <ContactShadows position={[0, 0.01, 0]} opacity={0.6} scale={40} blur={1} far={10} />
       
       <OrbitControls makeDefault maxPolarAngle={Math.PI / 2 - 0.05} />
-      <Environment preset="city" />
+      <Environment preset="night" />
     </Canvas>
   );
 }
