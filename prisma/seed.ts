@@ -19,12 +19,13 @@ function createClient() {
 
 const prisma = createClient();
 
-
-
 async function main() {
-  console.log("🌱 Seeding Elkonmix-90 database...");
+  console.log("🌱 Seeding Elkonmix-90 database...\n");
 
-  // ─── Clear existing data ──────────────────────────────────────────────────
+  // ─── Clear all data (order matters due to FK constraints) ─────────────────
+  await prisma.auditLog.deleteMany();
+  await prisma.sensorReading.deleteMany();
+  await prisma.deliveryNote.deleteMany();
   await prisma.productionOrder.deleteMany();
   await prisma.recipe.deleteMany();
   await prisma.inventory.deleteMany();
@@ -37,7 +38,10 @@ async function main() {
   const op1 = await prisma.operator.create({
     data: { name: "Senad Kovač", role: "OPERATOR" },
   });
-  console.log(`  ✓ Created ${2} operators`);
+  const op2 = await prisma.operator.create({
+    data: { name: "Lejla Bašić", role: "VIEWER" },
+  });
+  console.log("  ✓ Created 3 operators");
 
   // ─── Recipes ──────────────────────────────────────────────────────────────
   const rc30 = await prisma.recipe.create({
@@ -50,7 +54,6 @@ async function main() {
       admixtureAmount: 3.5,
     },
   });
-
   const rc40 = await prisma.recipe.create({
     data: {
       name: "C40/50 XF4",
@@ -61,7 +64,6 @@ async function main() {
       admixtureAmount: 5.2,
     },
   });
-
   const rc20 = await prisma.recipe.create({
     data: {
       name: "C20/25 XC1",
@@ -72,33 +74,76 @@ async function main() {
       admixtureAmount: null,
     },
   });
-
-  console.log(`  ✓ Created 3 recipes`);
+  console.log("  ✓ Created 3 recipes");
 
   // ─── Production Orders ────────────────────────────────────────────────────
-  await prisma.productionOrder.createMany({
-    data: [
-      { recipeId: rc30.id, quantity: 30, status: "COMPLETED" },
-      { recipeId: rc30.id, quantity: 20, status: "COMPLETED" },
-      { recipeId: rc40.id, quantity: 15, status: "IN_PROGRESS" },
-      { recipeId: rc20.id, quantity: 10, status: "PENDING" },
-      { recipeId: rc40.id, quantity: 25, status: "PENDING" },
-    ],
-  });
-  console.log(`  ✓ Created 5 production orders`);
+  const [o1, o2, o3, o4, o5] = await Promise.all([
+    prisma.productionOrder.create({ data: { recipeId: rc30.id, quantity: 30, status: "COMPLETED" } }),
+    prisma.productionOrder.create({ data: { recipeId: rc30.id, quantity: 20, status: "COMPLETED" } }),
+    prisma.productionOrder.create({ data: { recipeId: rc40.id, quantity: 15, status: "IN_PROGRESS" } }),
+    prisma.productionOrder.create({ data: { recipeId: rc20.id, quantity: 10, status: "PENDING" } }),
+    prisma.productionOrder.create({ data: { recipeId: rc40.id, quantity: 25, status: "PENDING" } }),
+  ]);
+  console.log("  ✓ Created 5 production orders");
 
-  // ─── Inventory ────────────────────────────────────────────────────────────
+  // ─── Inventory (with unit + lowThreshold) ─────────────────────────────────
   await prisma.inventory.createMany({
     data: [
-      { material: "Cement CEM I 42.5R", amount: 18500, capacity: 30000 },
-      { material: "Pijesak 0-4mm",       amount: 42000, capacity: 80000 },
-      { material: "Šljunak 8-16mm",      amount: 35000, capacity: 80000 },
-      { material: "Šljunak 16-32mm",     amount: 28000, capacity: 60000 },
-      { material: "Voda",                amount: 12000, capacity: 20000 },
-      { material: "Aditiv Sika ViscoCrete", amount: 850, capacity: 2000 },
+      { material: "Cement CEM I 42.5R",    amount: 18500, capacity: 30000, unit: "kg", lowThreshold: 5000  },
+      { material: "Pijesak 0-4mm",          amount: 42000, capacity: 80000, unit: "kg", lowThreshold: 10000 },
+      { material: "Šljunak 8-16mm",         amount: 35000, capacity: 80000, unit: "kg", lowThreshold: 10000 },
+      { material: "Šljunak 16-32mm",        amount: 28000, capacity: 60000, unit: "kg", lowThreshold: 8000  },
+      { material: "Voda",                   amount: 12000, capacity: 20000, unit: "L",  lowThreshold: 3000  },
+      { material: "Aditiv Sika ViscoCrete", amount:   850, capacity:  2000, unit: "L",  lowThreshold:  200  },
     ],
   });
-  console.log(`  ✓ Created 6 inventory items`);
+  console.log("  ✓ Created 6 inventory items (with unit + lowThreshold)");
+
+  // ─── Delivery Notes (Otpremnice) ──────────────────────────────────────────
+  // Only COMPLETED orders can have delivery notes
+  await prisma.deliveryNote.createMany({
+    data: [
+      {
+        orderId:    o1.id,
+        clientName: "Građevinar d.o.o. Sarajevo",
+        truckPlate: "S58-K-123",
+        volumeM3:   30,
+      },
+      {
+        orderId:    o2.id,
+        clientName: "Beton Gradnja Mostar",
+        truckPlate: "M12-A-456",
+        volumeM3:   20,
+      },
+    ],
+  });
+  console.log("  ✓ Created 2 delivery notes");
+
+  // ─── Sensor Readings ──────────────────────────────────────────────────────
+  const sensors = [
+    { sensorId: "cement_silo_1",   sensorType: "LEVEL",       value: 61.7, unit: "%" },
+    { sensorId: "sand_bin_1",      sensorType: "LEVEL",       value: 52.5, unit: "%" },
+    { sensorId: "gravel_bin_1",    sensorType: "LEVEL",       value: 43.8, unit: "%" },
+    { sensorId: "water_tank_1",    sensorType: "LEVEL",       value: 60.0, unit: "%" },
+    { sensorId: "mixer_temp",      sensorType: "TEMPERATURE",  value: 18.3, unit: "°C" },
+    { sensorId: "mixer_speed",     sensorType: "FLOW",        value: 22.5, unit: "RPM" },
+    { sensorId: "admix_pump_1",    sensorType: "FLOW",        value:  4.2, unit: "L/min" },
+    { sensorId: "output_scale_1",  sensorType: "WEIGHT",      value: 2450, unit: "kg" },
+  ];
+  await prisma.sensorReading.createMany({ data: sensors });
+  console.log("  ✓ Created 8 sensor readings");
+
+  // ─── Audit Log ────────────────────────────────────────────────────────────
+  await prisma.auditLog.createMany({
+    data: [
+      { action: "CREATE", entityType: "Recipe",          entityId: rc30.id, operatorId: admin.id, description: "Created recipe C30/37 XC4" },
+      { action: "CREATE", entityType: "Recipe",          entityId: rc40.id, operatorId: admin.id, description: "Created recipe C40/50 XF4" },
+      { action: "CREATE", entityType: "ProductionOrder", entityId: o1.id,   operatorId: op1.id,   description: "Created order 30m³ C30/37" },
+      { action: "STATUS_CHANGE", entityType: "ProductionOrder", entityId: o1.id, operatorId: op1.id, description: "Order marked COMPLETED" },
+      { action: "CREATE", entityType: "DeliveryNote",    entityId: o1.id,   operatorId: op1.id,   description: "Otpremnica za Građevinar Sarajevo" },
+    ],
+  });
+  console.log("  ✓ Created 5 audit log entries");
 
   console.log("\n✅ Seeding complete!");
 }
