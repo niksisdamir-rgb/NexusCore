@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import * as THREE from "three";
+import { Detailed } from "@react-three/drei";
 import FloatingLabel from "./FloatingLabel";
 import { PLANT_CONFIG, InventoryItem, StreamReading, levelToColor } from "./types";
 
@@ -44,36 +45,44 @@ function SingleSilo({
         </mesh>
       )}
 
-      {/* Transparent silo shell */}
-      <mesh castShadow>
-        <cylinderGeometry args={[radius, radius, height, 32]} />
-        <meshStandardMaterial
-          color="#9ca3af"
-          metalness={0.7}
-          roughness={0.3}
-          transparent
-          opacity={0.25}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+      <Detailed distances={[0, 15, 30]}>
+        {/* Level 0: High detail */}
+        <group>
+          <mesh castShadow>
+            <cylinderGeometry args={[radius, radius, height, 32]} />
+            <meshStandardMaterial
+              color="#9ca3af"
+              metalness={0.7}
+              roughness={0.3}
+              transparent
+              opacity={0.25}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+          <mesh position={[0, -height / 2 - funnelHeight / 2, 0]} castShadow>
+            <coneGeometry args={[radius, funnelHeight, 32, 1, true]} />
+            <meshStandardMaterial color="#6b7280" metalness={0.8} roughness={0.2} />
+          </mesh>
+        </group>
 
-      {/* Material fill level */}
-      <mesh position={[0, -height / 2 + fillHeight / 2, 0]}>
-        <cylinderGeometry args={[radius - 0.05, radius - 0.05, fillHeight, 32]} />
-        <meshStandardMaterial
-          color={fillColor}
-          metalness={0.5}
-          roughness={0.3}
-          emissive={fillColor}
-          emissiveIntensity={0.12}
-        />
-      </mesh>
+        {/* Level 1: Medium detail */}
+        <group>
+          <mesh castShadow>
+            <cylinderGeometry args={[radius, radius, height, 16]} />
+            <meshStandardMaterial color="#9ca3af" opacity={0.3} transparent />
+          </mesh>
+          <mesh position={[0, -height / 2 - funnelHeight / 2, 0]}>
+            <coneGeometry args={[radius, funnelHeight, 16]} />
+            <meshStandardMaterial color="#6b7280" />
+          </mesh>
+        </group>
 
-      {/* Cone funnel bottom */}
-      <mesh position={[0, -height / 2 - funnelHeight / 2, 0]} castShadow>
-        <coneGeometry args={[radius, funnelHeight, 32, 1, true]} />
-        <meshStandardMaterial color="#6b7280" metalness={0.8} roughness={0.2} />
-      </mesh>
+        {/* Level 2: Low detail */}
+        <mesh>
+          <boxGeometry args={[radius * 2, height + funnelHeight, radius * 2]} />
+          <meshStandardMaterial color="#6b7280" />
+        </mesh>
+      </Detailed>
 
       {/* Cone tip cap (outlet pipe) */}
       <mesh position={[0, -height / 2 - funnelHeight - 0.4, 0]} castShadow>
