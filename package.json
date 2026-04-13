@@ -33,7 +33,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@google/genai": "^0.1.2",
+    "@google/genai": "latest",
     "pdf-parse": "^1.1.1",
     "tesseract.js": "^5.0.5",
     "xlsx": "^0.18.5"
