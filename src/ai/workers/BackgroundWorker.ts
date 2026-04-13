@@ -9,6 +9,7 @@
  */
 
 import { prisma } from "@/lib/db";
+import { eventBus } from "@/lib/events";
 
 interface WorkerState {
   running: boolean;
@@ -63,17 +64,27 @@ async function tick() {
   state.totalRuns++;
 
   try {
-    // Ingest a batch of mock sensor readings
+    const dataBatch = SENSORS.map((s) => ({
+      sensorId: s.sensorId,
+      sensorType: s.sensorType,
+      value: parseFloat(mockSensorValue(s.sensorId, s.sensorType).toFixed(2)),
+      unit: s.unit,
+    }));
+
+    // 1. Persist to Database
     await prisma.sensorReading.createMany({
-      data: SENSORS.map((s) => ({
-        sensorId: s.sensorId,
-        sensorType: s.sensorType,
-        value: parseFloat(mockSensorValue(s.sensorId, s.sensorType).toFixed(2)),
-        unit: s.unit,
-      })),
+      data: dataBatch,
     });
+
+    // 2. Broadcast via EventBus for Real-time SSE
+    eventBus.emit("sensor_update", {
+      timestamp: state.lastRunAt,
+      readings: dataBatch,
+      runIndex: state.totalRuns
+    });
+
     state.lastError = null;
-    console.log(`[BackgroundWorker] Tick #${state.totalRuns} — ${SENSORS.length} sensor readings ingested`);
+    console.log(`[BackgroundWorker] Tick #${state.totalRuns} — ${SENSORS.length} sensor readings ingested and broadcasted.`);
   } catch (err: any) {
     state.lastError = err.message;
     console.error("[BackgroundWorker] Tick error:", err.message);
@@ -81,7 +92,7 @@ async function tick() {
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────
-export function startWorker(intervalMs = 30_000) {
+export function startWorker(intervalMs = 5000) {
   if (state.running) {
     console.log("[BackgroundWorker] Already running, skipping start.");
     return;
