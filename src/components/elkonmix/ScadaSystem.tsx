@@ -85,7 +85,7 @@ export default function ScadaSystem() {
         
         <main className="flex-1 p-6 flex flex-col space-y-4">
           <div className="h-[500px] w-full bg-black/5 rounded-lg overflow-hidden border border-border relative">
-             <PlantScene />
+             <PlantScene activeOrders={orders} />
           </div>
           <div className="grid grid-cols-3 gap-4">
              <div className="p-4 bg-card border-border border rounded shadow">
