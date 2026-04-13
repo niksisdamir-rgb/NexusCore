@@ -11,6 +11,8 @@ import {
   FileText, 
   Factory, 
   Bot,
+  TrendingUp,
+  Stethoscope,
   Settings
 } from "lucide-react";
 
@@ -21,6 +23,7 @@ const navItems = [
   { name: "Zalihe", href: "/zalihe", icon: Database },
   { name: "Otpremnice", href: "/otpremnice", icon: FileText },
   { name: "Izvještaji", href: "/izvjestaji", icon: TrendingUp },
+  { name: "Održavanje", href: "/odrzavanje", icon: Stethoscope },
   { name: "AI Asistent", href: "/ai-asistent", icon: Bot, color: "text-blue-500" },
 ];
 
