@@ -9,28 +9,48 @@ import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import Database from "better-sqlite3";
 
 function createPrismaClient() {
+  console.log("[Prisma] --- createPrismaClient Trace Start ---");
   const envUrl = process.env.DATABASE_URL;
-  console.log("[Prisma] Initializing client. env.DATABASE_URL:", envUrl);
+  console.log("[Prisma] env.DATABASE_URL:", envUrl);
+  console.log("[Prisma] typeof env.DATABASE_URL:", typeof envUrl);
   
-  // Default path for SQLite if env is missing or broken
+  // Default path for SQLite
   let dbPath = "prisma/dev.db"; 
   
   if (envUrl && typeof envUrl === "string") {
-    // Handle "file:./prisma/dev.db" or "file:prisma/dev.db" or "./prisma/dev.db"
-    dbPath = envUrl.replace(/^file:/, "");
+    console.log("[Prisma] envUrl exists and is string. Length:", envUrl.length);
+    try {
+      dbPath = envUrl.replace(/^file:/, "");
+      console.log("[Prisma] .replace success. dbPath:", dbPath);
+    } catch (e: any) {
+      console.error("[Prisma] Error during .replace:", e.message);
+    }
+  } else {
+    console.log("[Prisma] envUrl is missing or not a string. Using default.");
   }
   
-  console.log("[Prisma] Resolved dbPath for better-sqlite3:", dbPath);
+  console.log("[Prisma] Resolved dbPath:", dbPath);
   
   try {
+    console.log("[Prisma] Attempting new Database()...");
     const db = new Database(dbPath);
+    console.log("[Prisma] Database instance created.");
+    
+    console.log("[Prisma] Attempting new PrismaBetterSqlite3()...");
     const adapter = new PrismaBetterSqlite3(db);
-    return new PrismaClient({
+    console.log("[Prisma] Adapter created.");
+    
+    console.log("[Prisma] Attempting new PrismaClient()...");
+    const client = new PrismaClient({
       adapter,
       log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
     });
+    console.log("[Prisma] PrismaClient instance created.");
+    console.log("[Prisma] --- createPrismaClient Trace End ---");
+    return client;
   } catch (err: any) {
-    console.error("[Prisma] Failed to initialize Database or PrismaClient:", err.message);
+    console.error("[Prisma] --- TRACE ERROR ---:", err.message);
+    if (err.stack) console.error(err.stack);
     throw err;
   }
 }
