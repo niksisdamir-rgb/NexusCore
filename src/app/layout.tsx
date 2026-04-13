@@ -23,10 +23,14 @@ export default function RootLayout({
       <body className={cn(inter.className, "min-h-screen bg-background font-sans antialiased")}>
         <AuthProvider>
           <div className="flex h-screen overflow-hidden">
-            <Sidebar />
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-              <Header />
-              <main className="flex-1 overflow-y-auto bg-muted/30">
+            <div className="print:hidden">
+              <Sidebar />
+            </div>
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden print:overflow-visible">
+              <div className="print:hidden">
+                <Header />
+              </div>
+              <main className="flex-1 overflow-y-auto bg-muted/30 print:overflow-visible print:bg-white print:m-0 print:p-0">
                 {children}
               </main>
             </div>
