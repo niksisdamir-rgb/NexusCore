@@ -7,6 +7,7 @@ import { useSensorStream } from "@/hooks/useSensorStream";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LiveTicker } from "./LiveTicker";
 
 export function Header() {
   const { data: session } = useSession();
@@ -76,6 +77,11 @@ export function Header() {
             <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
           </Link>
         </nav>
+      </div>
+
+      {/* Real-time Telemetry Feed */}
+      <div className="flex-1 flex justify-center px-8 hidden xl:flex">
+        <LiveTicker />
       </div>
 
       <div className="flex items-center gap-6 text-sm text-muted-foreground">

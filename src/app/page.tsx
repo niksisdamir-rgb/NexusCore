@@ -22,6 +22,7 @@ import {
 import { useSensorStream } from "@/hooks/useSensorStream";
 import { useMaintenance } from "@/hooks/useMaintenance";
 import { useLogistics } from "@/hooks/useLogistics";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 const PlantScene = dynamic(() => import("@/components/elkonmix/PlantScene"), { ssr: false });
 const VoiceAssistant = dynamic(() => import("@/components/elkonmix/VoiceAssistant"), { ssr: false });
@@ -30,6 +31,8 @@ export default function DashboardPage() {
   const { data: streamData, status: streamStatus } = useSensorStream();
   const { report: maintenanceReport } = useMaintenance();
   const { trucks } = useLogistics();
+  const { lastEvent } = useTelemetry();
+
   const [data, setData] = useState<{
     recipes: any[];
     orders: any[];
@@ -67,9 +70,29 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 15000); // Pulse every 15s for structural data
+    // No more aggressive polling; we rely on events
+    const interval = setInterval(fetchData, 60000); // Heartbeat refresh every 60s
     return () => clearInterval(interval);
   }, []);
+
+  // Reactive telemetry listener
+  useEffect(() => {
+    if (!lastEvent) return;
+
+    // Refresh data for any major system event
+    const REFRESH_TRIGGERS = [
+      "PRODUCTION_STARTED", 
+      "PRODUCTION_COMPLETED", 
+      "PRODUCTION_CANCELLED",
+      "SILO_REFILLED",
+      "VEHICLE_STATUS_CHANGE"
+    ];
+
+    if (REFRESH_TRIGGERS.includes(lastEvent.type)) {
+      console.log(`[Dashboard] Reactive refresh triggered by: ${lastEvent.type}`);
+      fetchData();
+    }
+  }, [lastEvent]);
 
   const handleVoiceAction = useCallback((action: any) => {
     console.log("Voice action received:", action);
