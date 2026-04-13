@@ -32,5 +32,11 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@google/genai": "^0.1.2",
+    "pdf-parse": "^1.1.1",
+    "tesseract.js": "^5.0.5",
+    "xlsx": "^0.18.5"
+  }
 }
+
