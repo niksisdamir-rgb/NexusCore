@@ -13,6 +13,7 @@ import {
   Bot,
   TrendingUp,
   Stethoscope,
+  Users,
   Settings
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ const navItems = [
   { name: "Otpremnice", href: "/otpremnice", icon: FileText },
   { name: "Izvještaji", href: "/izvjestaji", icon: TrendingUp },
   { name: "Održavanje", href: "/odrzavanje", icon: Stethoscope },
+  { name: "Tim & Smene", href: "/tim", icon: Users },
   { name: "AI Asistent", href: "/ai-asistent", icon: Bot, color: "text-blue-500" },
 ];
 
