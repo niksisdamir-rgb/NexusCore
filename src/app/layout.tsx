@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body className={cn(inter.className, "min-h-screen bg-background font-sans antialiased")}>
+      <body className={cn(inter.className, "min-h-screen bg-theme-wallpaper font-sans antialiased")}>
         <AuthProvider>
           <div className="flex h-screen overflow-hidden">
             <div className="print:hidden">
