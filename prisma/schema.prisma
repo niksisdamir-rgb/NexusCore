@@ -94,13 +94,22 @@ model Operator {
 
 // ─── Delivery Notes (Otpremnice) ───────────────────────────────────────────
 model DeliveryNote {
-  id          Int             @id @default(autoincrement())
-  orderId     Int             @unique
-  order       ProductionOrder @relation(fields: [orderId], references: [id])
-  clientName  String
-  truckPlate  String
-  volumeM3    Float
-  deliveredAt DateTime        @default(now())
+  id                  Int             @id @default(autoincrement())
+  orderId             Int             @unique
+  order               ProductionOrder @relation(fields: [orderId], references: [id])
+  clientName          String
+  siteName            String?
+  truckPlate          String?
+  driverName          String?
+  volumeM3            Float
+  deliveredAt         DateTime        @default(now())
+  recipeFullName      String?
+  orderNumber         String?
+  productionNumber    String?
+  mixingTime          Int?
+  productionStartTime DateTime?
+  productionEndTime   DateTime?
+  materialStats       String?         // Stored as JSON string
 }
 
 // ─── Sensor Readings (SCADA telemetry) ────────────────────────────────────
