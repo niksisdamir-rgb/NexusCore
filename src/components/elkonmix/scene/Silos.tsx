@@ -10,6 +10,7 @@ interface SilosProps {
   inventory: InventoryItem[];
   streamReadings: StreamReading[];
   onSelect?: (id: string, label: string, level: number) => void;
+  faultySilos?: string[]; // Array of sensor IDs that are triggering maintenance alerts
 }
 
 function SingleSilo({
@@ -24,11 +25,21 @@ function SingleSilo({
   label: string;
   position: [number, number, number];
   onSelect?: () => void;
+  isFaulty?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
+  const shellRef = useRef<THREE.Mesh>(null);
   const { height, radius, funnelHeight } = PLANT_CONFIG.silos;
   const fillHeight = height * Math.max(level, 0.01);
   const fillColor = levelToColor(level);
+
+  useFrame(({ clock }) => {
+    if (isFaulty && shellRef.current) {
+      const pulse = (Math.sin(clock.elapsedTime * 6) + 1) / 2;
+      (shellRef.current.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(pulse, 0, 0);
+      (shellRef.current.material as THREE.MeshStandardMaterial).emissiveIntensity = pulse * 2;
+    }
+  });
 
   return (
     <group
@@ -48,7 +59,7 @@ function SingleSilo({
       <Detailed distances={[0, 15, 30]}>
         {/* Level 0: High detail */}
         <group>
-          <mesh castShadow>
+          <mesh castShadow ref={shellRef}>
             <cylinderGeometry args={[radius, radius, height, 32]} />
             <meshStandardMaterial
               color="#9ca3af"
@@ -110,7 +121,7 @@ function SingleSilo({
   );
 }
 
-const Silos = React.memo(function Silos({ inventory, streamReadings, onSelect }: SilosProps) {
+const Silos = React.memo(function Silos({ inventory, streamReadings, onSelect, faultySilos = [] }: SilosProps) {
   const getLevel = (sensorId: string, fallbackName: string) => {
     const stream = streamReadings.find((r) => r.sensorId === sensorId);
     if (stream) return stream.value / 100;
@@ -131,6 +142,7 @@ const Silos = React.memo(function Silos({ inventory, streamReadings, onSelect }:
             level={level}
             label={label}
             position={[i * gap, 0, 0]}
+            isFaulty={faultySilos.includes(sensors[i])}
             onSelect={() => onSelect?.(sensors[i], label, level)}
           />
         );

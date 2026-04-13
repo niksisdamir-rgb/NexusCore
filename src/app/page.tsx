@@ -20,12 +20,14 @@ import {
   Activity
 } from "lucide-react";
 import { useSensorStream } from "@/hooks/useSensorStream";
+import { useMaintenance } from "@/hooks/useMaintenance";
 
 const PlantScene = dynamic(() => import("@/components/elkonmix/PlantScene"), { ssr: false });
 const VoiceAssistant = dynamic(() => import("@/components/elkonmix/VoiceAssistant"), { ssr: false });
 
 export default function DashboardPage() {
   const { data: streamData, status: streamStatus } = useSensorStream();
+  const { report: maintenanceReport } = useMaintenance();
   const [data, setData] = useState<{
     recipes: any[];
     orders: any[];
@@ -173,6 +175,7 @@ export default function DashboardPage() {
             activeOrders={data.orders} 
             inventory={data.inventory} 
             streamData={streamData}
+            maintenanceReport={maintenanceReport}
           />
         </Card>
 
