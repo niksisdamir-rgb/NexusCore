@@ -1,6 +1,8 @@
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
+import QRCode from "qrcode";
+import { signReport } from "./crypto";
 
 // Extend jsPDF with autotable types for TypeScript
 declare module "jspdf" {
@@ -16,11 +18,18 @@ export const exportToExcel = (data: any[], fileName: string) => {
   XLSX.writeFile(workbook, `${fileName}.xlsx`);
 };
 
-export const generateProductionPDF = (reportData: any) => {
+export const generateProductionPDF = async (reportData: any) => {
   const doc = new jsPDF();
   const date = reportData.date || new Date().toISOString().split("T")[0];
+  const totalVolume = reportData.summary.totalVolume.toFixed(2);
 
-  // 1. Header
+  // 1. Generate Verification URL & QR Code
+  const baseUrl = window.location.origin;
+  const signature = signReport({ date, volume: totalVolume, type: "daily" });
+  const verifyUrl = `${baseUrl}/verify?d=${date}&v=${totalVolume}&s=${signature}&t=daily`;
+  const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, scale: 4 });
+
+  // 2. Header
   doc.setFillColor(31, 41, 55); // Dark Gray
   doc.rect(0, 0, 210, 40, "F");
   
@@ -32,13 +41,13 @@ export const generateProductionPDF = (reportData: any) => {
   doc.text(`Datum generisanja: ${new Date().toLocaleString()}`, 15, 34);
   doc.text(`Izveštaj za dan: ${date}`, 150, 34);
 
-  // 2. Summary Section
+  // 3. Summary Section
   doc.setTextColor(0, 0, 0);
   doc.setFontSize(14);
   doc.text("ZBIRNI PODACI PROIZVODNJE", 15, 55);
   
   const summaryData = [
-    ["Ukupna količina (m3)", reportData.summary.totalVolume.toFixed(2)],
+    ["Ukupna količina (m3)", totalVolume],
     ["Broj završenih naloga", reportData.summary.orderCount.toString()],
     ["Prosečna serija (m3)", (reportData.summary.totalVolume / (reportData.summary.orderCount || 1)).toFixed(2)]
   ];
@@ -48,10 +57,10 @@ export const generateProductionPDF = (reportData: any) => {
     head: [["Metrika", "Vrednost"]],
     body: summaryData,
     theme: "striped",
-    headStyles: { fillColor: [59, 130, 246] } // Blue
+    headStyles: { fillColor: [59, 130, 146] } 
   });
 
-  // 3. Material Consumption Section
+  // 4. Material Consumption Section
   doc.setFontSize(14);
   doc.text("UTROŠAK MATERIJALA (Procena)", 15, (doc as any).lastAutoTable.finalY + 15);
   
@@ -68,11 +77,28 @@ export const generateProductionPDF = (reportData: any) => {
     head: [["Sirovina", "Ukupna Količina"]],
     body: consumptionData,
     theme: "grid",
-    headStyles: { fillColor: [16, 185, 129] } // Green
+    headStyles: { fillColor: [16, 185, 129] }
   });
 
-  // 4. Production Log Table
+  // 5. Verification Section (Premium Feature)
+  const currentY = (doc as any).lastAutoTable.finalY + 20;
+  doc.setDrawColor(229, 231, 235);
+  doc.line(15, currentY, 195, currentY);
+  
+  doc.addImage(qrCodeDataUrl, "PNG", 15, currentY + 10, 30, 30);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("DIGITALNA VERIFIKACIJA DOKUMENTA", 50, currentY + 18);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(100, 100, 100);
+  doc.text("Skenirajte QR kod za proveru originalnosti ovog dokumenta u realnom vremenu.", 50, currentY + 23);
+  doc.text("Samo izveštaji sa validnim elektronskim potpisom se smatraju zvaničnim.", 50, currentY + 27);
+  doc.text(`Digitalna Potvrda: ${signature.substring(0, 16)}...`, 50, currentY + 36);
+
+  // 6. Production Log Table (on new page)
   doc.addPage();
+  doc.setTextColor(0,0,0);
   doc.setFontSize(14);
   doc.text("DETALJAN DNEVNIK IZDAVANJA", 15, 20);
 
@@ -91,7 +117,7 @@ export const generateProductionPDF = (reportData: any) => {
     headStyles: { fillColor: [31, 41, 55] }
   });
 
-  // 5. Footer
+  // 7. Footer
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
@@ -100,5 +126,5 @@ export const generateProductionPDF = (reportData: any) => {
     doc.text(`NexusCore SCADA System | Strana ${i} od ${pageCount}`, 105, 290, { align: "center" });
   }
 
-  doc.save(`Izvestaj_Proizvodnje_${date}.pdf`);
+  doc.save(`Zvanicni_Izvestaj_Proizvodnje_${date}.pdf`);
 };
