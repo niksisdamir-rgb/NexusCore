@@ -104,7 +104,7 @@ export default function WorkforcePage() {
              <input placeholder="Pretraži operatera..." className="pl-9 h-10 w-64 bg-background border border-border rounded-lg text-sm" />
            </div>
            <button 
-             onClick={fetchAnalysis}
+             onClick={fetchData}
              className="p-2 hover:bg-muted rounded-lg border border-border transition-all"
            >
              <RefreshCw className={loading ? "h-5 w-5 animate-spin" : "h-5 w-5"} />
