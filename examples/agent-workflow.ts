@@ -20,7 +20,7 @@ async function main() {
   const embedder = new GeminiEmbedding();
   const vectorStore = new MemoryVectorStore();
   
-  const textStrings = chunkedData.map(c => c.text);
+  const textStrings = chunkedData.map((c: any) => c.text);
   const vectors = await embedder.embedBatch(textStrings);
   await vectorStore.add(chunkedData, vectors);
 
@@ -29,7 +29,7 @@ async function main() {
   const semanticSearchTool = new Tool({
     name: 'SemanticSearch',
     description: 'Searches the document database for similar text to answer questions. Input should be a relevant semantic search phrase.',
-    execute: async (query) => {
+    execute: async (query: string) => {
       const queryVector = await embedder.embedText(query);
       const results = await vectorStore.similaritySearch(queryVector, 2);
       
