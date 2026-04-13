@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import * as THREE from "three";
 import { Detailed } from "@react-three/drei";
 import FloatingLabel from "./FloatingLabel";
