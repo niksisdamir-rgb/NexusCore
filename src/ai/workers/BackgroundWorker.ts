@@ -88,7 +88,6 @@ async function tick() {
   } catch (err: any) {
     state.lastError = err.message;
     console.error("[BackgroundWorker] Tick error:", err.message);
-    if (err.stack) console.error(err.stack);
   }
 }
 

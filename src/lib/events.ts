@@ -7,10 +7,16 @@ import { EventEmitter } from "events";
  */
 class GlobalEventBus extends EventEmitter {}
 
+const globalForEvents = globalThis as unknown as {
+  eventBus: GlobalEventBus | undefined;
+};
+
 // Global singleton instance
-const eventBus = new GlobalEventBus();
+export const eventBus = globalForEvents.eventBus ?? new GlobalEventBus();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForEvents.eventBus = eventBus;
+}
 
 // Increase max listeners for many concurrent SSE connections
 eventBus.setMaxListeners(100);
-
-export { eventBus };
