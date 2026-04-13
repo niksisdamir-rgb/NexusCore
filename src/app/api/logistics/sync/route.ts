@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { telemetryEmitter } from "@/lib/events";
 
 // ─── POST /api/logistics/sync ──────────────────────────────────────────
 // Simulates fleet movement and status transitions
@@ -51,6 +52,15 @@ export async function POST() {
         }
       }
 
+      if (newStatus !== truck.status) {
+        telemetryEmitter.emitEvent("VEHICLE_STATUS_CHANGE", {
+          truckId: truck.id,
+          number: truck.number,
+          from: truck.status,
+          to: newStatus
+        });
+      }
+
       const updated = await prisma.vehicle.update({
         where: { id: truck.id },
         data: {
@@ -86,14 +96,20 @@ export async function POST() {
         }
       } else if (order.status === "IN_TRANSIT") {
         if (Math.random() > 0.8) {
-          await prisma.siloRefillOrder.update({
+          const updatedRefill = await prisma.siloRefillOrder.update({
             where: { id: order.id },
-            data: { status: "COMPLETED" }
+            data: { status: "COMPLETED" },
+            include: { inventory: true }
           });
           // Update actual inventory
           await prisma.inventory.update({
             where: { id: order.inventoryId },
             data: { amount: { increment: order.quantity } }
+          });
+
+          telemetryEmitter.emitEvent("SILO_REFILLED", {
+            silo: updatedRefill.inventory.material,
+            amount: order.quantity
           });
         }
       }
