@@ -4,10 +4,12 @@ import React, { useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, ContactShadows, Billboard, Text, Float } from "@react-three/drei";
 import * as THREE from "three";
+import { StreamData } from "@/hooks/useSensorStream";
 
 interface PlantSceneProps {
   activeOrders?: any[];
   inventory?: any[];
+  streamData?: StreamData | null;
 }
 
 // 0. Floating Label Component for "Premium" 3D look
@@ -29,15 +31,18 @@ function FloatingLabel({ text, position, color = "#ffffff" }: { text: string; po
 }
 
 // 1. Silos for Cement
-function Silos({ inventory = [] }: { inventory: any[] }) {
-  // Find cement inventory levels
-  const cement1 = inventory.find(i => i.name.includes("Cement") && i.id % 2 === 0);
-  const cement2 = inventory.find(i => i.name.includes("Cement") && i.id % 2 !== 0);
+function Silos({ inventory = [], streamReadings = [] }: { inventory: any[], streamReadings: any[] }) {
+  // Utility to get value from either stream (priority) or static inventory
+  const getLevel = (sensorId: string, fallbackName: string) => {
+    const stream = streamReadings.find(r => r.sensorId === sensorId);
+    if (stream) return stream.value / 100; // SSE is 0-100%
 
-  const getFillScale = (item: any) => {
-    if (!item) return 0.5; // default 50%
-    return Math.max(0.1, item.amount / item.capacity);
+    const inv = inventory.find(i => i.name.includes(fallbackName));
+    return inv ? inv.amount / inv.capacity : 0.5;
   };
+
+  const cement1Level = getLevel("cement_silo_1", "Cement");
+  const cement2Level = getLevel("cement_silo_2", "Cement"); // If exists
 
   return (
     <group position={[-5, 4, -3]}>
@@ -49,8 +54,8 @@ function Silos({ inventory = [] }: { inventory: any[] }) {
           <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} transparent opacity={0.3} />
         </mesh>
         {/* Fill Level */}
-        <mesh position={[0, -4 + (8 * getFillScale(cement1)) / 2, 0]}>
-           <cylinderGeometry args={[1.45, 1.45, 8 * getFillScale(cement1), 32]} />
+        <mesh position={[0, -4 + (8 * cement1Level) / 2, 0]}>
+           <cylinderGeometry args={[1.45, 1.45, 8 * cement1Level, 32]} />
            <meshStandardMaterial color="#fcd34d" metalness={0.8} roughness={0.2} />
         </mesh>
       </group>
@@ -63,8 +68,8 @@ function Silos({ inventory = [] }: { inventory: any[] }) {
           <meshStandardMaterial color="#9ca3af" metalness={0.6} roughness={0.4} transparent opacity={0.3} />
         </mesh>
         {/* Fill Level */}
-        <mesh position={[0, -4 + (8 * getFillScale(cement2)) / 2, 0]}>
-           <cylinderGeometry args={[1.45, 1.45, 8 * getFillScale(cement2), 32]} />
+        <mesh position={[0, -4 + (8 * cement2Level) / 2, 0]}>
+           <cylinderGeometry args={[1.45, 1.45, 8 * cement2Level, 32]} />
            <meshStandardMaterial color="#fcd34d" metalness={0.8} roughness={0.2} />
         </mesh>
       </group>
@@ -73,18 +78,26 @@ function Silos({ inventory = [] }: { inventory: any[] }) {
 }
 
 // 2. Aggregates Bins (Sand, Gravel)
-function AggregateBins({ inventory = [] }: { inventory: any[] }) {
-  const aggregateItems = inventory.filter(i => i.name.includes("Pesak") || i.name.includes("Šljunak"));
+function AggregateBins({ inventory = [], streamReadings = [] }: { inventory: any[], streamReadings: any[] }) {
+  const getLevel = (sensorId: string, searchName: string) => {
+    const stream = streamReadings.find(r => r.sensorId === sensorId);
+    if (stream) return stream.value / 100;
+
+    const inv = inventory.find(i => i.name.includes(searchName));
+    return inv ? inv.amount / inv.capacity : 0.5;
+  };
+
+  const sensorMap = ["sand_bin_1", "gravel_bin_1", "sand_bin_2", "gravel_bin_2"];
+  const nameMap = ["Pesak", "Šljunak", "Pesak", "Šljunak"];
 
   return (
     <group position={[6, 2, 0]}>
       {[0, 1, 2, 3].map((i) => {
-        const item = aggregateItems[i];
-        const fillScale = item ? Math.max(0.1, item.amount / item.capacity) : 0.5;
+        const fillScale = getLevel(sensorMap[i], nameMap[i]);
         
         return (
           <group key={i} position={[0, 0, i * -2.5 + 3.75]}>
-            <FloatingLabel text={item?.name || `Bin ${i+1}`} position={[0, 4, 0]} />
+            <FloatingLabel text={nameMap[i] + ` ${Math.floor(i/2) + 1}`} position={[0, 4, 0]} />
             {/* Bin structure/glass */}
             <mesh position={[0, 1.5, 0]} castShadow>
               <boxGeometry args={[3, 3, 2.3]} />
@@ -164,10 +177,12 @@ function Ground() {
   );
 }
 
-export default function PlantScene({ activeOrders = [], inventory = [] }: PlantSceneProps) {
+export default function PlantScene({ activeOrders = [], inventory = [], streamData = null }: PlantSceneProps) {
   const hasActiveOrder = useMemo(() => {
     return activeOrders.some(order => order.status === 'IN_PROGRESS');
   }, [activeOrders]);
+
+  const streamReadings = streamData?.readings || [];
 
   return (
     <Canvas shadows camera={{ position: [15, 12, 18], fov: 40 }}>
@@ -181,8 +196,8 @@ export default function PlantScene({ activeOrders = [], inventory = [] }: PlantS
       )}
       
       <group position={[0, 0, 0]}>
-        <Silos inventory={inventory} />
-        <AggregateBins inventory={inventory} />
+        <Silos inventory={inventory} streamReadings={streamReadings} />
+        <AggregateBins inventory={inventory} streamReadings={streamReadings} />
         <Conveyor active={hasActiveOrder} />
         <MixerUnit active={hasActiveOrder} />
       </group>
